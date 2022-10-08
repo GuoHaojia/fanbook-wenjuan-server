@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: fanbook-wenjuan-server
+  namespace: {{ .Values.k8s.namespace }}
+spec:
+  selector:
+    fanbook.com/wenjuan: "server"
+  ports:
+    - name: api
+      port: {{ .Values.server.port }}
+      protocol: TCP
+      targetPort: {{ .Values.server.port }}
+  sessionAffinity: None
+  type: ClusterIP
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fanbook-wenjuan-server
+  namespace: {{ .Values.k8s.namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      fanbook.com/wenjuan: "server"
+  template:
+    metadata:
+      name: fanbook-wenjuan-server
+      labels:
+        fanbook.com/wenjuan: "server"
+    spec:
+      containers:
+        - image: {{ .Values.k8s.image }}
+          imagePullPolicy: Always
+          name: fanbook-wenjuan-server
+          #command: ["/bin/bash"]
+          #args: ["-c", "while true; do sleep 10;done"]
+          #securityContext:
+          #  privileged: true
+      enableServiceLinks: false
+      restartPolicy: Always

@@ -1,0 +1,21 @@
+# 服务配置
+server:
+  port: "8888"
+
+# K8s配置
+k8s:
+  namespace: "tars-dev"
+  image: "jaminzou/fanbook-wenjuan-server:latest"
+
+# 数据库配置
+db:
+  host: "mysql"
+  port: "3306"
+  user: "tarstime"
+  password: "Tarstime@2022"
+  name: "tduck"
+
+# 目录配置
+dir:
+  log: "./log"
+  tmp: "./data"

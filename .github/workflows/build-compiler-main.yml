@@ -1,0 +1,46 @@
+name: build-compiler-main
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    container: tarscloud/base-compiler
+    runs-on: ubuntu-20.04
+    env:
+      NAMESPACE: tars-dev
+      HELM_PACKAGE: fanbook-wenjuan-server-1.0.0.tgz
+    steps:
+      - name: env
+        run: env
+      - uses: actions/checkout@v2
+      - name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.name }}
+          password: ${{ secrets.pass }}
+      - name: Install SSH Key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.ACTION_DEPLOY_KEY }}
+          known_hosts: ${{ secrets.ACTION_KNOWN_HOSTS }}
+      - name: compile server
+        run: |
+          mvn clean install -DskipTests
+          cd tduck-api
+          mvn clean package -DskipTests
+          docker build -t jaminzou/fanbook-wenjuan-server .
+          docker push jaminzou/fanbook-wenjuan-server
+      - name: build helm
+        run: helm package helm -d .
+      - name: scp helm
+        run: scp -P 22000 $HELM_PACKAGE root@${{ secrets.ACTION_DEPLOY_HOST }}:/home/ubuntu/fanbook/
+      - name: deploy
+        run: |
+          cd /home/ubuntu/fanbook
+          ssh -p 22000 root@${{ secrets.ACTION_DEPLOY_HOST }} "helm upgrade --install fanbook-wenjuan-server $HELM_PACKAGE"

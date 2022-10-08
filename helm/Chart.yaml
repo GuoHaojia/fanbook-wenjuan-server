@@ -1,0 +1,9 @@
+apiVersion: v1
+name: fanbook-wenjuan-server
+version: 1.0.0
+type: application
+keywords: [ fanbook, wenjuan, server ]
+maintainers:
+  - name: jiaminzou
+    email: jiaminzou@tarstime.com
+appVersion: v1

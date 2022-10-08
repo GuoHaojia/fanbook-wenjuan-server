@@ -31,3 +31,6 @@ build/ !**/src/main/**/build/
 ### VS Code ###
 .vscode/
 /tduck-storage/target/
+
+### helm package ###
+fanbook-wenjuan-server-1.0.0.tgz
