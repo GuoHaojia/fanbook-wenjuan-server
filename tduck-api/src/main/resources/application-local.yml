@@ -1,9 +1,9 @@
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://10.100.1.105:3306/dev_tduck?useSSL=false&useUnicode=true&characterEncoding=utf8&serverTimezone=UTC&tinyInt1isBit=false
+    url: jdbc:mysql://127.0.0.1:3306/dev_tduck?useSSL=false&useUnicode=true&characterEncoding=utf8&serverTimezone=UTC&tinyInt1isBit=false
     username: root
-    password: qCNm5nJj9PFrT*mz
+    password: root
     type: com.zaxxer.hikari.HikariDataSource
     hikari:
       minimum-idle: 5
@@ -15,7 +15,7 @@ spring:
       connection-test-query: SELECT 1 FROM DUAL
   redis:
     database: 1
-    host: 10.100.0.2
+    host: 127.0.0.1
     port: 6379
     password: N7CZ_0_MbO6ACrXk    # 密码（默认为空）
     timeout: 6000ms  # 连接超时时长（毫秒）
@@ -74,9 +74,9 @@ fb:
     id: 355239222308765696
   open:
     fanbook_oauth_page: https://a1.fanbook.mobi/open/oauth2/authorize?response_type=code&client_id=${fb.open.client}&state=3
-    client: 357009948862976000
-    sceret: DrWaqbLMAidDnEZN4xJsDMZWpUk2zNJi
-    redirect_uri: http://192.168.104.75:8888/
+    client: 416120646909693952
+    sceret: Z4b4czVZKReSezRIW66BoLA3O1n5Hqm1
+    redirect_uri: http://localhost:8889
     api:
       openhost: https://a1.fanbook.mobi/open
       robothost: https://a1.fanbook.mobi/api/bot/bot
