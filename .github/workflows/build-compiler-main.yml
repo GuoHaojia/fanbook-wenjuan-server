@@ -24,11 +24,14 @@ jobs:
         with:
           username: ${{ secrets.name }}
           password: ${{ secrets.pass }}
-      - name: Install SSH Key
-        uses: shimataro/ssh-key-action@v2
-        with:
-          key: ${{ secrets.ACTION_DEPLOY_KEY }}
-          known_hosts: ${{ secrets.ACTION_KNOWN_HOSTS }}
+      -  name: Install SSH Key
+         uses: shimataro/ssh-key-action@v2
+         with:
+           key: ${{ secrets.ACTION_DEPLOY_KEY }}
+           name: ssh_tarstime_key
+           known_hosts: ${{ secrets.ACTION_KNOWN_HOSTS }}
+           config: ${{ secrets.ACTION_DEPLOY_CONFIG }}
+           if_key_exists: replace
       - name: compile server
         run: |
           mvn clean install -DskipTests
@@ -42,8 +45,6 @@ jobs:
       - name: build helm
         run: helm package helm -d .
       - name: scp helm
-        run: scp -P 22000 $HELM_PACKAGE root@${{ secrets.ACTION_DEPLOY_HOST }}:/home/ubuntu/fanbook/
+        run: scp -P 22000 $HELM_PACKAGE tarstime:/home/ubuntu/fanbook/
       - name: deploy
-        run: |
-          cd /home/ubuntu/fanbook
-          ssh -p 22000 root@${{ secrets.ACTION_DEPLOY_HOST }} "helm upgrade --install fanbook-wenjuan-server $HELM_PACKAGE"
+        run: ssh -p 22000 tarstime "helm upgrade --install fanbook-wenjuan-server /home/ubuntu/fanbook/$HELM_PACKAGE"
