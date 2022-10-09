@@ -30,6 +30,8 @@ spring:
     username: mpw:9jwi2HILb4x+eVy2fA0SYeits0G3qlm/YajJdX0OKQU=
     password: mpw:kLAEhMW75jvbXovAGdf4gEoe2/j6OJMaK2GYhTD8b8A=
 
+devdebug: True
+
 logging:
   level:
     com.tduck.cloud: debug

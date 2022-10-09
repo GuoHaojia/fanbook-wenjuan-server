@@ -8,6 +8,7 @@ import com.tduck.cloud.api.exception.AuthorizationException;
 import com.tduck.cloud.api.web.fb.service.OauthService;
 import io.jsonwebtoken.Claims;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
@@ -26,6 +27,10 @@ public class AuthorizationInterceptor extends HandlerInterceptorAdapter {
     @Autowired
     OauthService oauthService;
 
+
+    @Value("${devdebug}")
+    private boolean debug;
+
     public AuthorizationInterceptor(JwtUtils jwtUtils) {
         this.jwtUtils = jwtUtils;
     }
@@ -42,6 +47,11 @@ public class AuthorizationInterceptor extends HandlerInterceptorAdapter {
         if (annotation == null) {
             return true;
         }
+
+        if(debug){
+            return true;
+        }
+
         //获取用户FB凭证
         String fbtoken = request.getHeader("fbtoken");
         String token = request.getHeader("token");
