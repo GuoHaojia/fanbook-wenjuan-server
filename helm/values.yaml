@@ -5,6 +5,7 @@ server:
 # K8s配置
 k8s:
   namespace: "tars-dev"
+  name: fanbook-wenjuan-server
   image: "jaminzou/fanbook-wenjuan-server:latest"
 
 # 数据库配置
