@@ -12,9 +12,6 @@ jobs:
   build:
     container: tarscloud/base-compiler
     runs-on: ubuntu-20.04
-    env:
-      NAMESPACE: tars-dev
-      HELM_PACKAGE: fanbook-wenjuan-server-1.0.0.tgz
     steps:
       - name: env
         run: env
@@ -32,6 +29,9 @@ jobs:
            known_hosts: ${{ secrets.ACTION_KNOWN_HOSTS }}
            config: ${{ secrets.ACTION_DEPLOY_CONFIG }}
            if_key_exists: replace
+      -   name: Set Outputs
+          id: vars
+          run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
       - name: compile server
         run: |
           mvn clean install -DskipTests
@@ -40,11 +40,16 @@ jobs:
       - name: build docker
         run: |
           cd tduck-api
-          docker build -t jaminzou/fanbook-wenjuan-server .
-          docker push jaminzou/fanbook-wenjuan-server
+          docker build -t jaminzou/fanbook-wenjuan-server:${{ steps.vars.outputs.sha_short }} .
+          docker push jaminzou/fanbook-wenjuan-server:${{ steps.vars.outputs.sha_short }}
       - name: build helm
-        run: helm package helm -d .
+        run: |
+          export RemoteImagesTag=${{ steps.vars.outputs.sha_short }}
+          sed -i 's#${image-tag}#'${RemoteImagesTag}'#g' helm/values.yaml
+          helm package helm -d .
       - name: scp helm
-        run: scp -P 22000 $HELM_PACKAGE tarstime:/home/ubuntu/fanbook/
+        run: |
+          ssh -p 22000 tarstime "rm -f /home/ubuntu/fanbook/fanbook-wenjuan-server-*.tgz"
+          scp -P 22000 fanbook-wenjuan-server-${{ steps.vars.outputs.sha_short }}.tgz tarstime:/home/ubuntu/fanbook/
       - name: deploy
-        run: ssh -p 22000 tarstime "helm upgrade --install fanbook-wenjuan-server /home/ubuntu/fanbook/$HELM_PACKAGE"
+        run: ssh -p 22000 tarstime "helm upgrade --install fanbook-wenjuan-server /home/ubuntu/fanbook/fanbook-wenjuan-server-${{ steps.vars.outputs.sha_short }}.tgz"
