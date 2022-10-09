@@ -12,6 +12,8 @@ jobs:
   build:
     container: tarscloud/base-compiler
     runs-on: ubuntu-20.04
+    env:
+      HELM_PACKAGE: fanbook-wenjuan-server-1.0.0.tgz
     steps:
       - name: env
         run: env
@@ -42,6 +44,7 @@ jobs:
           cd tduck-api
           docker build -t jaminzou/fanbook-wenjuan-server:${{ steps.vars.outputs.sha_short }} .
           docker push jaminzou/fanbook-wenjuan-server:${{ steps.vars.outputs.sha_short }}
+          cd ..
       - name: build helm
         run: |
           export RemoteImagesTag=${{ steps.vars.outputs.sha_short }}
@@ -49,7 +52,7 @@ jobs:
           helm package helm -d .
       - name: scp helm
         run: |
-          ssh -p 22000 tarstime "rm -f /home/ubuntu/fanbook/fanbook-wenjuan-server-*.tgz"
-          scp -P 22000 fanbook-wenjuan-server-${{ steps.vars.outputs.sha_short }}.tgz tarstime:/home/ubuntu/fanbook/
+          ssh -p 22000 tarstime "rm -f /home/ubuntu/fanbook/$HELM_PACKAGE"
+          scp -P 22000 $HELM_PACKAGE tarstime:/home/ubuntu/fanbook/
       - name: deploy
-        run: ssh -p 22000 tarstime "helm upgrade --install fanbook-wenjuan-server /home/ubuntu/fanbook/fanbook-wenjuan-server-${{ steps.vars.outputs.sha_short }}.tgz"
+        run: ssh -p 22000 tarstime "helm upgrade --install fanbook-wenjuan-server /home/ubuntu/fanbook/$HELM_PACKAGE"
