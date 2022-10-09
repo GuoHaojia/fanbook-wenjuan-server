@@ -1,6 +1,6 @@
 # 服务配置
 server:
-  port: "8888"
+  port: "8999"
 
 # K8s配置
 k8s:

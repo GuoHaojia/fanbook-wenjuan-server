@@ -4,6 +4,10 @@ version: 1.0.0
 type: application
 keywords: [ fanbook, wenjuan, server ]
 maintainers:
+  - name: junlinli
+    email: junlinli@tarstime.com
+  - name: zhenyuli
+    email: zhenyuli@tarstime.com
   - name: jiaminzou
     email: jiaminzou@tarstime.com
 appVersion: v1
