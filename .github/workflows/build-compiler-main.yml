@@ -38,6 +38,7 @@ jobs:
         run: |
           mvn clean install -DskipTests
           cd tduck-api
+          sed -i 's#local#dev#g' src/main/resources/application.yml
           mvn clean package -DskipTests
       - name: build docker
         run: |
