@@ -1,9 +1,9 @@
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://10.100.1.105:3306/dev_tduck?useSSL=false&useUnicode=true&characterEncoding=utf8&serverTimezone=UTC&tinyInt1isBit=false
-    username: root
-    password: qCNm5nJj9PFrT*mz
+    url: jdbc:mysql://mysql:3306/tduck?useSSL=false&useUnicode=true&characterEncoding=utf8&serverTimezone=UTC&tinyInt1isBit=false
+    username: tarstime
+    password: Tarstime@2022
     type: com.zaxxer.hikari.HikariDataSource
     hikari:
       minimum-idle: 5
@@ -15,7 +15,7 @@ spring:
       connection-test-query: SELECT 1 FROM DUAL
   redis:
     database: 1
-    host: 10.100.0.2
+    host: redis
     port: 6379
     password: N7CZ_0_MbO6ACrXk    # 密码（默认为空）
     timeout: 6000ms  # 连接超时时长（毫秒）
@@ -57,9 +57,9 @@ platform:
     validateCodeTemplateId: 808150
     retrievePwdValidateCodeTemplateId: 809014
   front:
-    baseUrl: http://localhost:8888/
-    resetPwdUrl: http://localhost:8888/forget/password?code={}&email={}
-    updateEmailUrl: http://localhost:8888/account/validate?type=updateEmail&code={}&email={}
+    baseUrl: http://wenjuan.k.tarstime.com/
+    resetPwdUrl: http://wenjuan.k.tarstime.com/forget/password?code={}&email={}
+    updateEmailUrl: http://wenjuan.k.tarstime.com/account/validate?type=updateEmail&code={}&email={}
 wx:
   mp:
     redis-config-key-prefix: wx
@@ -74,9 +74,9 @@ fb:
     id: 355239222308765696
   open:
     fanbook_oauth_page: https://a1.fanbook.mobi/open/oauth2/authorize?response_type=code&client_id=${fb.open.client}&state=3
-    client: 355238656526651392
-    sceret: Hw32xQisWagg5r3B7z1robdjRA72KzQ3
-    redirect_uri: http://10.100.1.39:8888/
+    client: 419786482488840192
+    sceret: WIbAHHSrIY31EMAUq7yyaZpkV3nKtUJI
+    redirect_uri: http://wenjuan.k.tarstime.com/
     api:
       openhost: https://a1.fanbook.mobi/open
       robothost: https://a1.fanbook.mobi/api/bot/bot
