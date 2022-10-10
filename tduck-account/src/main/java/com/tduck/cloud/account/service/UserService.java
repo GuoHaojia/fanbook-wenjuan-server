@@ -7,7 +7,11 @@ import com.tduck.cloud.account.request.AccountLoginRequest;
 import com.tduck.cloud.account.request.QqLoginRequest;
 import com.tduck.cloud.account.request.RegisterAccountRequest;
 import com.tduck.cloud.account.vo.LoginUserVO;
+import com.tduck.cloud.account.vo.RoleVo;
+import com.tduck.cloud.account.vo.UserRoleVo;
 import com.tduck.cloud.common.util.Result;
+
+import java.util.List;
 
 /**
  * 用户(AcUser)表服务接口
@@ -100,4 +104,8 @@ public interface UserService extends IService<UserEntity> {
      * @return
      */
     Boolean updatePassword(Long userId, String password);
+
+    List<UserRoleVo> getUserByRole(RoleVo roleVo);
+
+    Long updateUserBelong(UserRoleVo userRoleVo);
 }

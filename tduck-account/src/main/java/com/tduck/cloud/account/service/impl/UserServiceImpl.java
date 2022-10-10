@@ -21,13 +21,18 @@ import com.tduck.cloud.account.service.UserService;
 import com.tduck.cloud.account.util.JwtUtils;
 import com.tduck.cloud.account.util.NameUtils;
 import com.tduck.cloud.account.vo.LoginUserVO;
+import com.tduck.cloud.account.vo.RoleVo;
+import com.tduck.cloud.account.vo.UserRoleVo;
 import com.tduck.cloud.common.util.RedisUtils;
 import com.tduck.cloud.common.util.Result;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 用户(AcUser)表服务实现类
@@ -40,6 +45,8 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> implements UserService {
 
+    @Autowired
+    private UserMapper userMapper;
 
     private final JwtUtils jwtUtils;
     private final RedisUtils redisUtils;
@@ -181,6 +188,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> impleme
         userEntity.setId(userId);
         userEntity.setPassword(DigestUtil.sha256Hex(password));
         return this.updateById(userEntity);
+    }
+
+    @Override
+    public List<UserRoleVo> getUserByRole(RoleVo roleVo){
+        return this.userMapper.getUserByRole(roleVo);
+    }
+
+    @Override
+    public Long updateUserBelong(UserRoleVo roleVo){
+        return this.userMapper.updateUserBelong(roleVo);
     }
 }
 
