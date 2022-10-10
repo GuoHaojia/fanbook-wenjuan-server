@@ -17,7 +17,7 @@ spring:
     database: 1
     host: 127.0.0.1
     port: 6379
-    password: N7CZ_0_MbO6ACrXk    # 密码（默认为空）
+    password: # 密码（默认为空）
     timeout: 6000ms  # 连接超时时长（毫秒）
     jedis:
       pool:
@@ -76,9 +76,9 @@ fb:
     id: 355239222308765696
   open:
     fanbook_oauth_page: https://a1.fanbook.mobi/open/oauth2/authorize?response_type=code&client_id=${fb.open.client}&state=3
-    client: 416120646909693952
-    sceret: Z4b4czVZKReSezRIW66BoLA3O1n5Hqm1
-    redirect_uri: http://localhost:8888
+    client: 416120980407193600
+    sceret: JI4TVEdstBY2C1sAfu6jftHBm7fSEUFB
+    redirect_uri: http://localhost:8888/
     api:
       openhost: https://a1.fanbook.mobi/open
       robothost: https://a1.fanbook.mobi/api/bot/bot
