@@ -7,16 +7,3 @@ k8s:
   namespace: "tars-dev"
   name: fanbook-wenjuan-server
   image: "jaminzou/fanbook-wenjuan-server:${image-tag}"
-
-# 数据库配置
-db:
-  host: "mysql"
-  port: "3306"
-  user: "tarstime"
-  password: "Tarstime@2022"
-  name: "tduck"
-
-# 目录配置
-dir:
-  log: "./log"
-  tmp: "./data"
