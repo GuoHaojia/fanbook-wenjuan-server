@@ -78,7 +78,7 @@ fb:
     fanbook_oauth_page: https://a1.fanbook.mobi/open/oauth2/authorize?response_type=code&client_id=${fb.open.client}&state=3
     client: 416120646909693952
     sceret: Z4b4czVZKReSezRIW66BoLA3O1n5Hqm1
-    redirect_uri: http://localhost:8889
+    redirect_uri: http://localhost:8888
     api:
       openhost: https://a1.fanbook.mobi/open
       robothost: https://a1.fanbook.mobi/api/bot/bot
