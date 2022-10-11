@@ -14,7 +14,7 @@ import java.util.List;
  * <p>
  * mark
  */
-
-public interface RoleService  extends IService<RoleEntity> {
+@Service
+public interface RoleService extends IService<RoleEntity> {
     List<RoleEntity> queryList();
 }

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tduck.cloud.account.mapper.AdminMapper">
+
+    <select id="queryList" resultType="com.tduck.cloud.account.entity.AdminEntity">
+        select t1.name as rolename,t1.id as roleid,t1.status as rolestatus from ac_role t1
+    </select>
+
+    <select id="getUserByRole" parameterType="com.tduck.cloud.account.vo.AdminVo" resultType="com.tduck.cloud.account.entity.AdminEntity">
+        select t1.name as rolename,t1.id as roleid,t1.status as rolestatus ,t3.* from ac_role t1
+        join ac_user_role t2 on t1.id = t2.role_id
+        join ac_user t3 on t2.user_id = t3.id
+        where 1 = 1
+        and t2.status = 1
+        <if test="status !=null">
+            and t1.status = #{status}
+        </if>
+        <if test="roleid !=null">
+            and t1.id = #{roleid}
+        </if>
+        <if test="rolename !=null">
+            and t1.name = #{rolename}
+        </if>
+    </select>
+
+
+    <insert id="updateUserBelong" parameterType="com.tduck.cloud.account.vo.AdminRoleVo">
+        insert into ac_user_role (user_id,role_id,status)
+        value (#{userid},#{roleid},#{rolestatus})
+        on DUPLICATE key
+        UPDATE
+        status = #{rolestatus}
+
+        <selectKey keyColumn="id" resultType="java.lang.Long" keyProperty="id" order="AFTER" >
+            SELECT LAST_INSERT_ID()
+        </selectKey>
+    </insert>
+</mapper>
