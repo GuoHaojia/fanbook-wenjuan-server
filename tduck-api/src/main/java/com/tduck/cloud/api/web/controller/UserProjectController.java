@@ -174,8 +174,8 @@ public class UserProjectController {
      */
     @Login
     @GetMapping("/user/project/list")
-    public Result listProjects(QueryProjectRequest.List request, @RequestAttribute Long userId) {
-        List<UserProjectEntity> entityList = projectService.list(Wrappers.<UserProjectEntity>lambdaQuery().eq(UserProjectEntity::getUserId, userId)
+    public Result listProjects(QueryProjectRequest.List request, @RequestAttribute Long fbUser) {
+        List<UserProjectEntity> entityList = projectService.list(Wrappers.<UserProjectEntity>lambdaQuery().eq(UserProjectEntity::getFbUser, fbUser)
                 .eq(ObjectUtil.isNotNull(request.getStatus()), UserProjectEntity::getStatus, request.getStatus())
                 .orderByDesc(BaseEntity::getUpdateTime));
         return Result.success(entityList);
@@ -186,9 +186,9 @@ public class UserProjectController {
      */
     @Login
     @GetMapping("/user/project/page")
-    public Result queryMyProjects(@RequestParam Long fbUser, QueryProjectRequest.Page request) {
+    public Result queryMyProjects(QueryProjectRequest.Page request) {
         return Result.success(projectService.page(request.toMybatisPage(),
-                Wrappers.<UserProjectEntity>lambdaQuery().eq(UserProjectEntity::getFbUser, fbUser)
+                Wrappers.<UserProjectEntity>lambdaQuery().eq(UserProjectEntity::getFbUser, request.getFbUser())
                         .eq(UserProjectEntity::getDeleted, false)
                         .eq(ObjectUtil.isNotNull(request.getStatus()), UserProjectEntity::getStatus, request.getStatus())
                         .like(StrUtil.isNotBlank(request.getName()), UserProjectEntity::getName, request.getName())
@@ -402,10 +402,10 @@ public class UserProjectController {
      */
     @Login
     @PostMapping("/user/project/update")
-    public Result updateProject(@RequestBody UserProjectEntity project, @RequestAttribute Long userId) {
+    public Result updateProject(@RequestBody UserProjectEntity project) {
         ValidatorUtils.validateEntity(project, AddGroup.class);
         UserProjectEntity oldProject = projectService.getByKey(project.getKey());
-        if (ObjectUtil.isNotNull(oldProject) && userId.equals(oldProject.getUserId())) {
+        if (ObjectUtil.isNotNull(oldProject) && project.getFbUser().equals(oldProject.getFbUser())) {
             project.setId(oldProject.getId());
             projectService.updateById(project);
         }
@@ -655,9 +655,9 @@ public class UserProjectController {
      */
     @Login
     @GetMapping("/user/project/recycle/page")
-    public Result queryRecycleProjects(@RequestAttribute Long userId, QueryProjectRequest.Page request) {
+    public Result queryRecycleProjects(QueryProjectRequest.Page request) {
         Page page = projectService.page(request.toMybatisPage(),
-                Wrappers.<UserProjectEntity>lambdaQuery().eq(UserProjectEntity::getUserId, userId)
+                Wrappers.<UserProjectEntity>lambdaQuery().eq(UserProjectEntity::getFbUser, request.getFbUser())
                         .eq(UserProjectEntity::getDeleted, true)
                         .orderByDesc(BaseEntity::getUpdateTime));
         List<UserProjectEntity> records = page.getRecords();
@@ -688,8 +688,8 @@ public class UserProjectController {
      */
     @Login
     @PostMapping("/user/project/recycle/delete")
-    public Result deleteRecycleProject(@RequestAttribute Long userId, @RequestBody UserProjectEntity projectEntity) {
-        boolean remove = projectService.remove(Wrappers.<UserProjectEntity>lambdaQuery().eq(UserProjectEntity::getUserId, userId)
+    public Result deleteRecycleProject(@RequestAttribute Long fbUser, @RequestBody UserProjectEntity projectEntity) {
+        boolean remove = projectService.remove(Wrappers.<UserProjectEntity>lambdaQuery().eq(UserProjectEntity::getFbUser, fbUser)
                 .eq(UserProjectEntity::getKey, projectEntity.getKey()));
         if (remove) {
             userProjectThemeService.remove(Wrappers.<UserProjectThemeEntity>lambdaQuery()

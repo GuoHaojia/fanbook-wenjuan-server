@@ -27,6 +27,8 @@ public class QueryProjectRequest {
      */
     @Data
     public static class Page extends PageRequest {
+        private Long fbUser;
+
         private Integer status;
 
         private String name;

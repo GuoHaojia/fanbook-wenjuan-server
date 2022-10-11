@@ -108,6 +108,9 @@ public class UserLoginFBController {
         if (null == guilJson) {
             return Result.failed("服务器数据获取失败，请检查token是否有效！");
         }
+        if (null == user) {
+            return Result.failed("服务器数据获取失败，可能是token过期，请重新登录！");
+        }
         List<FbGuild> list = guilJson.getJSONArray("data").toJavaList(FbGuild.class);
         List<FbGuild> newList = new ArrayList<>();
         list.forEach(fbGuild -> {
