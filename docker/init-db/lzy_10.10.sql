@@ -1,0 +1,2 @@
+alter table pr_user_project add column `answer_num` int(10) not null default '0' comment '答卷数量' after `guild_id`;
+alter table pr_user_project add column `publish_num` int(10) not null default '0' comment '发布次数' after `answer_num`;
