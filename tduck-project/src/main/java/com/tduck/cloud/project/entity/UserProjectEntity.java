@@ -81,12 +81,27 @@ public class UserProjectEntity extends BaseEntity<UserProjectEntity> {
     @TableField(value = "fb_user")
     private Long fbUser;
 
+    /**
+     * 答卷数量
+     */
+    @TableField(value = "answer_num")
+    private Integer answerNum;
+
+    /**
+     * 发布次数
+     */
+    @TableField(value = "publish_num")
+    private Integer publishNum;
+
     //    @TableField(exist = false)
 //    private Long fbChannel;
 //    @TableField(exist = false)
 //    private String guildName;
 //    @TableField(exist = false)
 //    private String fbChannelName;
+    /**
+     * 推送列表
+     */
     @TableField(exist = false)
     List<PublishEntity> publishList;
 }

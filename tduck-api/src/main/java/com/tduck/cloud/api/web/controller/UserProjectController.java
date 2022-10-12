@@ -120,22 +120,49 @@ public class UserProjectController {
         return Result.success(project.getKey());
     }
 
+    /**
+     * 复制项目
+     */
+    @Login
+    @PostMapping("/user/project/copy")
+    public Result copyProject(@RequestBody UserProjectEntity project) {
+        ValidatorUtils.validateEntity(project, AddGroup.class);
+        //为当前登录用户
+        UserEntity userEntity = userService.getOne(Wrappers.<UserEntity>lambdaQuery().eq(UserEntity::getFbUser, project.getFbUser()));
+        String oldKey = project.getKey();
+        //复制项目
+        project.setName(project.getName());
+        project.setAnswerNum(0);
+        project.setPublishNum(0);
+        project.setKey(IdUtil.fastSimpleUUID());
+        project.setUserId(userEntity.getId());
+        project.setFbUser(project.getFbUser());
+        projectService.save(project);
+        //复制表单项
+        String newKey = project.getKey();
+        List<UserProjectItemEntity> userProjectItemEntities = projectItemService.listByProjectKey(oldKey);
+        List<UserProjectItemEntity> userProjectItemEntityList = JsonUtils.jsonToList(JsonUtils.objToJson(userProjectItemEntities), UserProjectItemEntity.class);
+        userProjectItemEntityList.forEach(userProjectItemEntity -> userProjectItemEntity.setProjectKey(newKey));
+        boolean saveBatch = projectItemService.saveBatch(userProjectItemEntityList);
+        return Result.success(project.getKey(), "项目表单项复制"+saveBatch);
+    }
 
     /**
      * 从模板创建项目
      */
     @Login
     @PostMapping("/user/project/use-template/create")
-    public Result createProjectByTemplate(@RequestBody ProjectTemplateEntity request, @RequestAttribute Long userId) {
+    public Result createProjectByTemplate(@RequestBody ProjectTemplateEntity request) {
         String templateKey = request.getKey();
         ProjectTemplateEntity projectTemplateEntity = projectTemplateService.getByKey(templateKey);
         List<ProjectTemplateItemEntity> projectTemplateItemEntities = projectTemplateItemService.listByTemplateKey(templateKey);
+        UserEntity userEntity = userService.getOne(Wrappers.<UserEntity>lambdaQuery().eq(UserEntity::getFbUser, request.getFbUser()));
         UserProjectEntity userProjectEntity = new UserProjectEntity();
         BeanUtil.copyProperties(projectTemplateEntity, userProjectEntity, UserProjectEntity.Fields.status);
         userProjectEntity.setSourceType(ProjectSourceTypeEnum.TEMPLATE);
         userProjectEntity.setSourceId(projectTemplateEntity.getId().toString());
         userProjectEntity.setKey(IdUtil.fastSimpleUUID());
-        userProjectEntity.setUserId(userId);
+        userProjectEntity.setUserId(userEntity.getId());
         userProjectEntity.setStatus(ProjectStatusEnum.CREATE);
         projectService.save(userProjectEntity);
         List<UserProjectItemEntity> userProjectItemEntityList = JsonUtils.jsonToList(JsonUtils.objToJson(projectTemplateItemEntities), UserProjectItemEntity.class);
@@ -220,6 +247,10 @@ public class UserProjectController {
         }
         UserProjectEntity entity = projectService.getByKey(request.getKey());
         entity.setStatus(ProjectStatusEnum.RELEASE);
+
+        Integer publishNum = entity.getPublishNum();
+        publishNum++;
+        entity.setPublishNum(publishNum);
 //        if (request.getPublishList().size() > 0) {
 //            List<PublishEntity> publishList = request.getPublishList();
 //            publishList.forEach(pe -> {
@@ -398,7 +429,7 @@ public class UserProjectController {
      * 项目更新
      *
      * @param project
-     * @param userId
+     * @param fbUser
      */
     @Login
     @PostMapping("/user/project/update")
