@@ -42,8 +42,6 @@ import java.util.logging.Logger;
 public class RoleController {
     private final UserService userService;
     private final RoleService roleService;
-    private final UserAuthorizeService userAuthorizeService;
-    private final UserValidateService userValidateService;
 
     @Login
     @GetMapping("/role/list")
@@ -55,15 +53,23 @@ public class RoleController {
 
     @Login
     @PostMapping("/role/update")
-    @ApiOperation("用户角色修改")
+    @ApiOperation("用户角色修改和添加")
     public Result updateRole(@RequestBody RoleEntity roleEntity){
-        return Result.success(roleService.updateById(roleEntity));
+        if(roleEntity.getId() == null){
+            return Result.success(roleService.save(roleEntity));
+        }else{
+            return Result.success(roleService.updateById(roleEntity));
+        }
     }
 
     @Login
     @PostMapping("/role/group")
     @ApiOperation("查询角色下所有用户")
     public Result userListByRole(@RequestBody RoleVo roleVo){
+        if(roleVo.getRoleid() == null){
+            return Result.failed("角色不得为空");
+        }
+
         return Result.success(userService.getUserByRole(roleVo));
     }
 
@@ -71,6 +77,9 @@ public class RoleController {
     @PostMapping("/role/up")
     @ApiOperation("用户角色变更")
     public Result updateUserBelong(@RequestBody UserRoleVo userRoleVo){
+        if(userRoleVo.getUserid() == null || userRoleVo.getRoleid() == null){
+            return Result.failed("角色 用户不得为空");
+        }
         userService.updateUserBelong(userRoleVo);
         return Result.success(userRoleVo.getId());
     }

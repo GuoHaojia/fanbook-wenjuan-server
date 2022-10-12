@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tduck.cloud.account.mapper.PermissionMapper">
+    
+    <select id="selectListByRole" parameterType="com.tduck.cloud.account.vo.PermissionRoleVo" resultType="com.tduck.cloud.account.entity.PermissionEntity">
+        select t2.* from ac_role_permission t1
+            join ac_permission t2 on t1.permission_id = t2.id
+        where t1.role_id = #{roleid}
+    </select>
+
+    <select id="selectAdminByUserId" parameterType="com.tduck.cloud.account.entity.UserInfo" resultType="com.tduck.cloud.account.entity.PermissionEntity">
+        select t5.* from ac_role t1
+            join ac_user_role t2 on t1.id = t2.role_id
+            join ac_user t3 on t3.id = t2.user_id
+            join ac_role_permission t4 on t4.role_id = t1.id
+            join ac_permission t5 on t4.permission_id = t5.id
+        where t2.status = 1
+        and t3.fb_user = #{user_id}
+    </select>
+
+    <delete id="deleteRolePermission" parameterType="com.tduck.cloud.account.vo.PermissionRoleVo">
+        delete from ac_role_permission where role_id = #{roleid}
+    </delete>
+
+    <insert id="insertRolePermission" parameterType="com.tduck.cloud.account.vo.PermissionRoleVo">
+        insert into ac_role_permission(role_id,permission_id)
+        values
+        <foreach collection="permissionsid" item="item" index="index" separator=",">
+            (#{roleid},#{item})
+        </foreach>
+    </insert>
+
+</mapper>

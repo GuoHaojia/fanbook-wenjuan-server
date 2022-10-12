@@ -31,25 +31,4 @@ public class RoleVo {
     //启用禁用
     private Integer status;
 
-    /**
-     * 【非数据库字段】
-     * 查询ID：分页查询使用，用于标记分页查询最大ID;
-     */
-    @Transient
-    private Long qid;
-
-    @Transient
-    private String descOrAsc;
-
-    @Transient
-    private Integer onlyPageNo;
-
-    /**
-     * 查询起始行【非数据库字段】
-     */
-    @Transient
-    private Long start;
-
-    @Transient
-    private String roleId;
 }
