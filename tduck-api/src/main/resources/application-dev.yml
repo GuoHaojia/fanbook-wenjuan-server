@@ -81,10 +81,10 @@ fb:
     redirect_uri: http://wenjuan.k.tarstime.com/
     api:
       openhost: https://a1.fanbook.mobi/open
-      robothost: https://a1.fanbook.mobi/api/bot/bot
       token: /oauth2/token
       refresh_token: /oauth2/refresh
       getMe: /api/user/getMe
       getGuilds: /api/guild/getGuilds
       sendMessage: /sendMessage
+      robothost: https://a1.fanbook.mobi/api/bot
 
