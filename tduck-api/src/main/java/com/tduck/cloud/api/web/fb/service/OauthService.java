@@ -149,10 +149,6 @@ public class OauthService {
                 .get()
                 .sync();
 
-        Logger logger = Logger.getLogger("ceshi2");
-        logger.info(rJson);
-
-
         if (null != rJson) {
             JSONArray userJson = JSONObject.parseObject(rJson).getJSONArray("result");
 

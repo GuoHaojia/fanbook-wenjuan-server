@@ -2,6 +2,7 @@ package com.tduck.cloud.api.web.controller;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.ObjectUtil;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.tduck.cloud.account.entity.RoleEntity;
 import com.tduck.cloud.account.entity.UserAuthorizeEntity;
 import com.tduck.cloud.account.entity.UserEntity;
@@ -15,6 +16,8 @@ import com.tduck.cloud.account.vo.UserDetailVO;
 import com.tduck.cloud.account.vo.UserRoleVo;
 import com.tduck.cloud.api.annotation.Login;
 import com.tduck.cloud.common.util.Result;
+import com.tduck.cloud.project.entity.UserProjectLogicEntity;
+import com.tduck.cloud.project.service.UserProjectLogicService;
 import com.tduck.cloud.wx.mp.entity.WxMpUserEntity;
 import com.tduck.cloud.wx.mp.service.WxMpUserService;
 import io.swagger.annotations.Api;
@@ -42,6 +45,8 @@ import java.util.logging.Logger;
 public class RoleController {
     private final UserService userService;
     private final RoleService roleService;
+
+    private final UserProjectLogicService projectLogicService;
 
     @Login
     @GetMapping("/role/list")
@@ -82,5 +87,13 @@ public class RoleController {
         }
         userService.updateUserBelong(userRoleVo);
         return Result.success(userRoleVo.getId());
+    }
+
+    @Login
+    @PostMapping("/role/view")
+    @ApiOperation("用户角色逻辑")
+    public Result queryRoleLogic(){
+        List<UserProjectLogicEntity> entityList = projectLogicService.list(Wrappers.<UserProjectLogicEntity>lambdaQuery().eq(UserProjectLogicEntity::getProjectKey, "c312e2bb890248ae98d4b0ffbb0bc777").eq(UserProjectLogicEntity::getType,3));
+        return Result.success(entityList);
     }
 }

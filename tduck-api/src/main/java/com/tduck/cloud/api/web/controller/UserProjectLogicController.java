@@ -47,7 +47,7 @@ public class UserProjectLogicController {
     @GetMapping("/user/project/logic/list")
     public Result queryProjectItem(@RequestParam @NotBlank String projectKey) {
 
-        List<UserProjectLogicEntity> entityList = projectLogicService.list(Wrappers.<UserProjectLogicEntity>lambdaQuery().eq(UserProjectLogicEntity::getProjectKey, projectKey));
+        List<UserProjectLogicEntity> entityList = projectLogicService.list(Wrappers.<UserProjectLogicEntity>lambdaQuery().eq(UserProjectLogicEntity::getProjectKey, projectKey).eq(UserProjectLogicEntity::getType,1));
         return Result.success(entityList);
     }
 }

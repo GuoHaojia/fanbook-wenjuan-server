@@ -1,5 +1,6 @@
 package com.tduck.cloud.account.vo;
 
+import lombok.Builder;
 import lombok.Data;
 
 /**
@@ -11,6 +12,7 @@ import lombok.Data;
  * mark
  */
 @Data
+@Builder
 public class UserRoleVo {
 
     private Long id;

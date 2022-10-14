@@ -78,3 +78,14 @@ INSERT INTO `ac_role_permission` VALUES ('3', '6', null);
 
 ALTER TABLE `ac_user`
 ADD UNIQUE INDEX `fanbookid` (`fb_user`) USING HASH ;
+
+
+ALTER TABLE `pr_user_project_logic`
+DROP COLUMN `type`,
+ADD COLUMN `type`  tinyint(1) NOT NULL DEFAULT 1 COMMENT '1显示逻辑 2跳题逻辑 3角色分配' AFTER `update_time`;
+
+
+ALTER TABLE `pr_user_project_result`
+MODIFY COLUMN `fb_userid`  bigint(21) NULL DEFAULT NULL AFTER `update_time`,
+MODIFY COLUMN `guild_id`  bigint(21) NULL DEFAULT NULL AFTER `fb_username`,
+AUTO_INCREMENT=2;

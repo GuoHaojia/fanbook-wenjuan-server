@@ -31,6 +31,15 @@ public class UserProjectLogicEntity extends BaseEntity<UserProjectLogicEntity> {
      * 表单项Id
      */
     private Long formItemId;
+
+    /**
+     *
+     * 1 显示逻辑
+     * 2 跳题逻辑
+     * 3 角色分配逻辑
+     *
+     */
+    private Integer type;
     /**
      * 条件成立的表达式
      */
@@ -41,7 +50,7 @@ public class UserProjectLogicEntity extends BaseEntity<UserProjectLogicEntity> {
      * 条件
      */
     @TableField(typeHandler = JacksonTypeHandler.class)
-    private Set<Condition> conditionList;
+    public Set<Condition> conditionList;
 
 
     /**
