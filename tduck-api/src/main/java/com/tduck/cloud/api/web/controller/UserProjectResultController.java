@@ -8,6 +8,13 @@ import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.poi.excel.ExcelUtil;
 import cn.hutool.poi.excel.ExcelWriter;
+import com.alibaba.fastjson.JSON;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.tduck.cloud.account.entity.UserEntity;
+import com.tduck.cloud.account.service.UserService;
+import com.tduck.cloud.account.vo.UserRoleVo;
 import com.tduck.cloud.api.annotation.Login;
 import com.tduck.cloud.api.annotation.NoRepeatSubmit;
 import com.tduck.cloud.api.util.HttpUtils;
@@ -17,16 +24,23 @@ import com.tduck.cloud.common.util.RedisUtils;
 import com.tduck.cloud.common.util.Result;
 import com.tduck.cloud.common.validator.ValidatorUtils;
 import com.tduck.cloud.project.entity.UserProjectEntity;
+import com.tduck.cloud.project.entity.UserProjectLogicEntity;
 import com.tduck.cloud.project.entity.UserProjectResultEntity;
 import com.tduck.cloud.project.entity.UserProjectSettingEntity;
+import com.tduck.cloud.project.entity.enums.ProjectLogicExpressionEnum;
 import com.tduck.cloud.project.request.QueryProjectResultRequest;
+import com.tduck.cloud.project.service.UserProjectLogicService;
 import com.tduck.cloud.project.service.UserProjectResultService;
 import com.tduck.cloud.project.service.UserProjectService;
 import com.tduck.cloud.project.service.UserProjectSettingService;
 import com.tduck.cloud.project.vo.ExportProjectResultVO;
 import com.tduck.cloud.wx.mp.service.WxMpUserMsgService;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.ibatis.mapping.Environment;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.ServletOutputStream;
@@ -34,6 +48,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.logging.Logger;
 
 import static com.tduck.cloud.project.constant.ProjectRedisKeyConstants.PROJECT_VIEW_IP_LIST;
 
@@ -44,6 +61,7 @@ import static com.tduck.cloud.project.constant.ProjectRedisKeyConstants.PROJECT_
  **/
 
 @Slf4j
+@Data
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/user/project/result")
@@ -55,6 +73,13 @@ public class UserProjectResultController {
     private final MailService mailService;
     private final WxMpUserMsgService userMsgService;
     private final RedisUtils redisUtils;
+
+
+    private final UserProjectLogicService projectLogicService;
+    private final UserService userService;
+
+    @Value("${devdebug}")
+    private boolean debug;
 
     /***
      * 查看项目
@@ -80,18 +105,133 @@ public class UserProjectResultController {
     @NoRepeatSubmit
     @PostMapping("/create")
     public Result createProjectResult(@RequestBody UserProjectResultEntity entity, HttpServletRequest request) {
+
+        //本地测试
+        if(debug){
+            entity.setFbUserid("416120040304148480");
+            entity.setFbUsername("3904464");
+            entity.setGuildId("420861300550139904");
+            entity.setGuildName("测试服务");
+        }
+
+
         ValidatorUtils.validateEntity(entity);
         entity.setSubmitRequestIp(HttpUtils.getIpAddr(request));
+
+        //校验时间 填写次数等
         Result<UserProjectSettingEntity> userProjectSettingStatus = userProjectSettingService.getUserProjectSettingStatus(entity.getProjectKey(), entity.getSubmitRequestIp(), entity.getWxOpenId());
         if (StrUtil.isNotBlank(userProjectSettingStatus.getMsg())) {
             return Result.failed(userProjectSettingStatus.getMsg());
         }
+
+
         projectResultService.saveProjectResult(entity);
+
+        //结算奖励 奖励同步返回 异步投送通知
+
+        //分配角色内容
+        List<UserProjectLogicEntity> entityList = projectLogicService.list(Wrappers.<UserProjectLogicEntity>lambdaQuery().eq(UserProjectLogicEntity::getProjectKey, entity.getProjectKey()).eq(UserProjectLogicEntity::getType,3));
+
+        for(UserProjectLogicEntity logic : entityList){
+            //每个角色逻辑
+
+            Logger logger = Logger.getLogger("test");
+
+            Set<UserProjectLogicEntity.Condition> set = logic.getConditionList();
+
+            Integer flag = 0;
+            //逻辑集合遍历
+            for (UserProjectLogicEntity.Condition item : JSON.parseArray(JSON.toJSONString(set), UserProjectLogicEntity.Condition.class)){
+
+                //任意逻辑 满足  就分配角色
+                if(logic.getExpression().equals(ProjectLogicExpressionEnum.ANY) && logicItem(item,entity.getOriginalData())){
+                    flag = 2;
+                    break;
+                }
+
+                //全部逻辑
+                if(logic.getExpression().equals(ProjectLogicExpressionEnum.ALL)){
+                    //逻辑犯错 就终止
+                    if(logicItem(item,entity.getOriginalData())){
+                        flag = 1;
+                        continue;
+                    }else{
+                        flag = 0;
+                        break;
+                    }
+                }
+            }
+
+            if(logic.getExpression().equals(ProjectLogicExpressionEnum.ALL) && flag == 1) {
+                flag = 2;
+            }
+
+            //构建角色 赋予用户
+            if(flag == 2){
+                ///fbuserid 转uid
+                QueryWrapper<UserEntity> queryWrapper = new QueryWrapper<>();
+                queryWrapper.eq("fb_user", entity.getFbUserid());
+                UserEntity dbUserEntity = userService.getOne(queryWrapper);
+
+                UserRoleVo userRoleVo = new UserRoleVo();
+                userRoleVo.setUserid(dbUserEntity.getId());
+                userRoleVo.setRoleid(logic.getFormItemId());
+                userRoleVo.setRolestatus(1);
+
+                userService.updateUserBelong(userRoleVo);
+            }
+        }
+        //分配角色内容 end
+
         ThreadUtil.execAsync(() -> {
+            //异步邮件通知
             UserProjectSettingEntity settingEntity = userProjectSettingStatus.isDataNull() ? null : userProjectSettingStatus.getData();
             this.sendWriteResultNotify(settingEntity, entity);
         });
         return Result.success();
+    }
+
+    //逻辑判断子方法 判断每个判断条件是否生效
+    private Boolean logicItem(UserProjectLogicEntity.Condition item, Map<String, Object> originalData){
+        ///相等情况  满足一个就返回
+        if(item.getExpression().equals("eq")){
+            if(originalData.get("field"+item.getFormItemId()) instanceof List<?>){
+
+                for( Object formid : (List<?>)originalData.get("field"+item.getFormItemId())){
+                    if(item.getOptionValue() == formid){
+                        return true;
+                    }
+                }
+
+                return false;
+            }else{
+                if(item.getOptionValue() == originalData.get("field"+item.getFormItemId())){
+                    return true;
+                }else{
+                    return false;
+                }
+            }
+        }
+
+        //不等情况下 取反
+        if(item.getExpression().equals("ne")){
+            if(originalData.get("field"+item.getFormItemId()) instanceof List<?>){
+
+                for( Object formid : (List<?>)originalData.get("field"+item.getFormItemId())){
+                    if(item.getOptionValue() == formid){
+                        return false;
+                    }
+                }
+                return true;
+            }else{
+                if(item.getOptionValue() == originalData.get("field"+item.getFormItemId())){
+                    return false;
+                }else{
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**
