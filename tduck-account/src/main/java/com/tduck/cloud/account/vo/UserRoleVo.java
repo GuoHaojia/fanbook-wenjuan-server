@@ -12,7 +12,6 @@ import lombok.Data;
  * mark
  */
 @Data
-@Builder
 public class UserRoleVo {
 
     private Long id;
