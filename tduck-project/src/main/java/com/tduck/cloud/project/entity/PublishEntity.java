@@ -1,10 +1,12 @@
 package com.tduck.cloud.project.entity;
 
+import cn.hutool.core.date.DatePattern;
 import com.alibaba.fastjson.annotation.JSONField;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.tduck.cloud.common.entity.BaseEntity;
 
@@ -12,6 +14,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
 
 
 @Data
@@ -34,5 +38,11 @@ public class PublishEntity extends BaseEntity<PublishEntity> {
     String fbChannelName;
     @JsonProperty(value = "status")
     Integer status;
+    @TableField("`publish_time`")
+    @JsonFormat(pattern = DatePattern.NORM_DATETIME_MINUTE_PATTERN)
+    LocalDateTime publishTime;
+    @TableField("`answer_num`")
+    Integer answerNum;
+
 
 }
