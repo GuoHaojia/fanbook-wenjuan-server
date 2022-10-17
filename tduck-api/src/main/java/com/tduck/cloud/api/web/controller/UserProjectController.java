@@ -16,6 +16,7 @@ import com.google.common.collect.Sets;
 import com.tduck.cloud.account.entity.UserEntity;
 import com.tduck.cloud.account.service.UserService;
 import com.tduck.cloud.api.annotation.Login;
+import com.tduck.cloud.api.util.DateConvertUtils;
 import com.tduck.cloud.api.util.HttpUtils;
 import com.tduck.cloud.common.constant.CommonConstants;
 import com.tduck.cloud.common.constant.FanbookCard;
@@ -58,8 +59,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotBlank;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -78,6 +78,7 @@ public class UserProjectController {
     private final UserProjectResultService projectResultService;
     private final UserService userService;
     private final SortUtils sortUtils;
+    private final UserProjectLogicService projectLogicService;
     private final UserProjectThemeService userProjectThemeService;
     private final UserProjectSettingService userProjectSettingService;
     private final ProjectTemplateService projectTemplateService;
@@ -142,9 +143,30 @@ public class UserProjectController {
         String newKey = project.getKey();
         List<UserProjectItemEntity> userProjectItemEntities = projectItemService.listByProjectKey(oldKey);
         List<UserProjectItemEntity> userProjectItemEntityList = JsonUtils.jsonToList(JsonUtils.objToJson(userProjectItemEntities), UserProjectItemEntity.class);
-        userProjectItemEntityList.forEach(userProjectItemEntity -> userProjectItemEntity.setProjectKey(newKey));
-        boolean saveBatch = projectItemService.saveBatch(userProjectItemEntityList);
-        return Result.success(project.getKey(), "项目表单项复制"+saveBatch);
+        userProjectItemEntityList.forEach(item -> item.setProjectKey(newKey));
+        projectItemService.saveBatch(userProjectItemEntityList);
+        //复制逻辑
+        UserProjectLogicEntity logic = projectLogicService.
+                getOne(Wrappers.<UserProjectLogicEntity>lambdaQuery().eq(UserProjectLogicEntity::getProjectKey, oldKey));
+        if (ObjectUtil.isNotNull(logic)) {
+            logic.setProjectKey(newKey);
+            projectLogicService.save(logic);
+        }
+        //复制主题
+        UserProjectThemeEntity theme = userProjectThemeService
+                .getOne(Wrappers.<UserProjectThemeEntity>lambdaQuery().eq(UserProjectThemeEntity::getProjectKey, oldKey));
+        if (ObjectUtil.isNotNull(theme)) {
+            theme.setProjectKey(newKey);
+            userProjectThemeService.save(theme);
+        }
+        //复制设置
+        UserProjectSettingEntity setting = userProjectSettingService
+                .getOne(Wrappers.<UserProjectSettingEntity>lambdaQuery().eq(UserProjectSettingEntity::getProjectKey, oldKey));
+        if (ObjectUtil.isNotNull(setting)) {
+            setting.setProjectKey(newKey);
+            userProjectSettingService.save(setting);
+        }
+        return Result.success(project.getKey());
     }
 
     /**
@@ -285,7 +307,8 @@ public class UserProjectController {
 //                }
 //            });
 //        }
-        return Result.success(projectService.updateById(entity));
+        boolean update = projectService.updateById(entity);
+        return Result.success(entity, "发布"+update);
     }
 
     /**
@@ -327,6 +350,7 @@ public class UserProjectController {
 //                .guildId(request.getGuildId())
 //                .fbChannelName(request.getFbChannelName())
 //                .fbChannel(request.getFbChannel())
+//                .status(request.getStatus())
 //                .build();
         if (request.getPublishList().size() > 0) {
             request.getPublishList().forEach(obj -> {
@@ -347,23 +371,66 @@ public class UserProjectController {
 
                     Boolean aBoolean=(Boolean)JSONObject.parseObject(rstr).get("ok");
                     log.debug("发送文件返回：" + rstr);
-                    //是否已经推送
-                    Integer count = userPublishService.count(Wrappers.<PublishEntity>lambdaQuery()
-                            .eq(PublishEntity::getKey, request.getKey())
-                            .eq(PublishEntity::getFbChannel, obj.getFbChannel().toString()));
+//                    //是否已经推送
+//                    Integer count = userPublishService.count(Wrappers.<PublishEntity>lambdaQuery()
+//                            .eq(PublishEntity::getKey, request.getKey())
+//                            .eq(PublishEntity::getFbChannel, obj.getFbChannel().toString()));
                     obj.setKey(request.getKey());
                     obj.setStatus(aBoolean ? 1 : 2);
-                    if (count == 0) {
-                        obj.setStatus(1);
+//                    if (count == 0) {
+//                        obj.setStatus(aBoolean ? 1 : 2);
                         userPublishService.save(obj);
-                    } else {
-                        String timeStr1 = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"));
-                        userPublishService.update(Wrappers.<PublishEntity>lambdaUpdate().set(PublishEntity::getStatus,aBoolean ? 1 : 2).set(PublishEntity::getUpdateTime, timeStr1).eq(PublishEntity::getKey, request.getKey()).eq(PublishEntity::getFbChannel, obj.getFbChannel()));
-                    }
+//                    } else {
+//                        String timeStr1 = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"));
+//                        userPublishService.update(Wrappers.<PublishEntity>lambdaUpdate().set(PublishEntity::getStatus,aBoolean ? 1 : 2).set(PublishEntity::getUpdateTime, timeStr1).eq(PublishEntity::getKey, request.getKey()).eq(PublishEntity::getFbChannel, obj.getFbChannel()));
+//                    }
                     log.debug("发送文件返回：" + rstr);
                 }
             });
         }
+        return Result.success();
+    }
+
+    /**
+     * 推送消息(定时)
+     */
+    @Login
+    @PostMapping("/user/project/timingPublishMsg")
+    public Result timingPublishMsg(@RequestBody UserProjectEntity request) {
+        UserProjectEntity entity = projectService.getByKey(request.getKey());
+
+        Timer timer = new Timer();
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                if (request.getPublishList().size() > 0) {
+                    request.getPublishList().forEach(obj -> {
+
+                        if (!StringUtils.isEmpty(obj.getFbChannel())) {
+                            JSONObject jsonObject = new JSONObject();
+                            jsonObject.put("chat_id", obj.getFbChannel());
+                            Document doc = Jsoup.parse(entity.getDescribe());
+                            Elements links = doc.getElementsByTag("p");
+                            JSONObject cardJson = FanbookCard.getWenJuanString(entity.getName(), links.get(0).text(), appUrl + "s/" + request.getKey());
+                            JSONObject taskJson = new JSONObject();
+                            taskJson.put("type", "task");
+                            taskJson.put("content", cardJson);
+                            jsonObject.put("text", taskJson.toString());
+                            jsonObject.put("parse_mode", "Fanbook");
+                            String rstr = fanbookService.sendMessage(jsonObject);
+
+                            Boolean aBoolean=(Boolean)JSONObject.parseObject(rstr).get("ok");
+                            log.debug("发送文件返回：" + rstr);
+                            obj.setKey(request.getKey());
+                            obj.setStatus(aBoolean ? 1 : 2);
+                            userPublishService.save(obj);
+                            log.debug("发送文件返回：" + rstr);
+                        }
+                    });
+                }
+
+            }
+        }, DateConvertUtils.localDateTimeToDate(request.getPublishList().get(0).getPublishTime()));
         return Result.success();
     }
 
@@ -429,7 +496,6 @@ public class UserProjectController {
      * 项目更新
      *
      * @param project
-     * @param fbUser
      */
     @Login
     @PostMapping("/user/project/update")
