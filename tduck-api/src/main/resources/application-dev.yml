@@ -76,8 +76,8 @@ fb:
     id: 355239222308765696
   open:
     fanbook_oauth_page: https://a1.fanbook.mobi/open/oauth2/authorize?response_type=code&client_id=${fb.open.client}&state=3
-    client: 419786482488840192
-    sceret: WIbAHHSrIY31EMAUq7yyaZpkV3nKtUJI
+    client: 419381547393748992
+    sceret: Sq1lvUYRzkmLZqwoAmBv7KZnmWwHARlu
     redirect_uri: http://wenjuan.k.tarstime.com/
     api:
       openhost: https://a1.fanbook.mobi/open
