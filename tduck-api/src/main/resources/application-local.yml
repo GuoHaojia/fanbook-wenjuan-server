@@ -72,13 +72,13 @@ wx:
         aesKey:
 fb:
   bot:
-    token: 1ffc79e9f18c8b730960e67582c7b52f45317067fad673d27f6c83ed8ed39bb2e52c0efcb0f78ad693272ebb11171e57
+    token: 8302590f7379f29b28fbfbcdfbf3c9ca3d3efdaf84d55bb69364c206da31541b1cf156ce14686efcd61296b7030fd08d
     id: 355239222308765696
   open:
     fanbook_oauth_page: https://a1.fanbook.mobi/open/oauth2/authorize?response_type=code&client_id=${fb.open.client}&state=3
     client: 416120646909693952
     sceret: Z4b4czVZKReSezRIW66BoLA3O1n5Hqm1
-    redirect_uri: http://localhost:8888
+    redirect_uri: http://localhost:8888/
     api:
       openhost: https://a1.fanbook.mobi/open
       token: /oauth2/token

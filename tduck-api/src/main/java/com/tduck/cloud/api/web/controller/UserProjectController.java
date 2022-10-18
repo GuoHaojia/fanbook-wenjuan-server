@@ -371,19 +371,19 @@ public class UserProjectController {
 
                     Boolean aBoolean=(Boolean)JSONObject.parseObject(rstr).get("ok");
                     log.debug("发送文件返回：" + rstr);
-//                    //是否已经推送
-//                    Integer count = userPublishService.count(Wrappers.<PublishEntity>lambdaQuery()
-//                            .eq(PublishEntity::getKey, request.getKey())
-//                            .eq(PublishEntity::getFbChannel, obj.getFbChannel().toString()));
+                    //是否已经推送
+                    Integer count = userPublishService.count(Wrappers.<PublishEntity>lambdaQuery()
+                            .eq(PublishEntity::getKey, request.getKey())
+                            .eq(PublishEntity::getFbChannel, obj.getFbChannel().toString()));
                     obj.setKey(request.getKey());
                     obj.setStatus(aBoolean ? 1 : 2);
-//                    if (count == 0) {
-//                        obj.setStatus(aBoolean ? 1 : 2);
+                    if (count == 0) {
+                        obj.setStatus(aBoolean ? 1 : 2);
                         userPublishService.save(obj);
-//                    } else {
-//                        String timeStr1 = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"));
-//                        userPublishService.update(Wrappers.<PublishEntity>lambdaUpdate().set(PublishEntity::getStatus,aBoolean ? 1 : 2).set(PublishEntity::getUpdateTime, timeStr1).eq(PublishEntity::getKey, request.getKey()).eq(PublishEntity::getFbChannel, obj.getFbChannel()));
-//                    }
+                    } else {
+                        String timeStr1 = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"));
+                        userPublishService.update(Wrappers.<PublishEntity>lambdaUpdate().set(PublishEntity::getStatus,aBoolean ? 1 : 2).set(PublishEntity::getUpdateTime, timeStr1).eq(PublishEntity::getKey, request.getKey()).eq(PublishEntity::getFbChannel, obj.getFbChannel()));
+                    }
                     log.debug("发送文件返回：" + rstr);
                 }
             });
@@ -396,9 +396,11 @@ public class UserProjectController {
      */
     @Login
     @PostMapping("/user/project/timingPublishMsg")
-    public Result timingPublishMsg(@RequestBody UserProjectEntity request) {
+    public Result timingPublishMsg(@RequestBody UserProjectEntity request) throws Exception{
         UserProjectEntity entity = projectService.getByKey(request.getKey());
 
+//        Date parse = new SimpleDateFormat("yyyy-MM-dd HH:mm").parse(request.getPublishTime());
+        Date parse = DateConvertUtils.localDateTimeToDate(ObjectUtil.isNotNull(request.getPublishTime()) ? request.getPublishTime() : LocalDateTime.now());
         Timer timer = new Timer();
         timer.schedule(new TimerTask() {
             @Override
@@ -411,6 +413,7 @@ public class UserProjectController {
                             jsonObject.put("chat_id", obj.getFbChannel());
                             Document doc = Jsoup.parse(entity.getDescribe());
                             Elements links = doc.getElementsByTag("p");
+                            ValidatorUtils.validateEntity(links);
                             JSONObject cardJson = FanbookCard.getWenJuanString(entity.getName(), links.get(0).text(), appUrl + "s/" + request.getKey());
                             JSONObject taskJson = new JSONObject();
                             taskJson.put("type", "task");
@@ -418,19 +421,17 @@ public class UserProjectController {
                             jsonObject.put("text", taskJson.toString());
                             jsonObject.put("parse_mode", "Fanbook");
                             String rstr = fanbookService.sendMessage(jsonObject);
-
                             Boolean aBoolean=(Boolean)JSONObject.parseObject(rstr).get("ok");
-                            log.debug("发送文件返回：" + rstr);
                             obj.setKey(request.getKey());
                             obj.setStatus(aBoolean ? 1 : 2);
+                            obj.setPublishTime(DateConvertUtils.dateToLocalDateTime(parse));
                             userPublishService.save(obj);
                             log.debug("发送文件返回：" + rstr);
                         }
                     });
                 }
-
             }
-        }, DateConvertUtils.localDateTimeToDate(request.getPublishList().get(0).getPublishTime()));
+        }, parse);
         return Result.success();
     }
 

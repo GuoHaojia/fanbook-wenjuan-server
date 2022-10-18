@@ -39,7 +39,7 @@ public class PublishEntity extends BaseEntity<PublishEntity> {
     @JsonProperty(value = "status")
     Integer status;
     @TableField("`publish_time`")
-    @JsonFormat(pattern = DatePattern.NORM_DATETIME_MINUTE_PATTERN)
+    @JsonFormat(pattern = DatePattern.NORM_DATETIME_PATTERN)
     LocalDateTime publishTime;
     @TableField("`answer_num`")
     Integer answerNum;

@@ -17,7 +17,7 @@ public class FanbookServiceImpl implements FanbookService {
 
     @Override
     public String sendMessage(JSONObject jsonObject) {
-        String url=robothost+botToke + sendMessageUrl;
+        String url=robothost + "/bot" + botToke + sendMessageUrl;
         System.out.println(url);
         System.out.println(jsonObject);
         return RestTemplateUtil.builder().post(url, jsonObject);

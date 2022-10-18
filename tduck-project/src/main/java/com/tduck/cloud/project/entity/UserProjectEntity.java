@@ -1,9 +1,11 @@
 package com.tduck.cloud.project.entity;
 
+import cn.hutool.core.date.DatePattern;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.tduck.cloud.common.entity.BaseEntity;
 import com.tduck.cloud.common.validator.group.AddGroup;
 import com.tduck.cloud.common.validator.group.UpdateGroup;
@@ -11,8 +13,10 @@ import com.tduck.cloud.project.entity.enums.ProjectSourceTypeEnum;
 import com.tduck.cloud.project.entity.enums.ProjectStatusEnum;
 import lombok.Data;
 import lombok.experimental.FieldNameConstants;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import javax.validation.constraints.NotBlank;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -104,4 +108,9 @@ public class UserProjectEntity extends BaseEntity<UserProjectEntity> {
      */
     @TableField(exist = false)
     List<PublishEntity> publishList;
+
+    @TableField(exist = false)
+    @DateTimeFormat(pattern = DatePattern.NORM_DATETIME_MINUTE_PATTERN)
+    @JsonFormat(pattern = DatePattern.NORM_DATETIME_PATTERN)
+    LocalDateTime publishTime;
 }
