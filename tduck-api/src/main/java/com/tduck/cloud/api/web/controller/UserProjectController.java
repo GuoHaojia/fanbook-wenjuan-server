@@ -57,6 +57,8 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotBlank;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -486,6 +488,19 @@ public class UserProjectController {
      */
     @GetMapping("/user/project/details/{key}")
     public Result queryProjectDetails(@PathVariable @NotBlank String key) {
+
+        //获取配置时间
+        UserProjectSettingEntity entity = userProjectSettingService
+                .getOne(Wrappers.<UserProjectSettingEntity>lambdaQuery().eq(UserProjectSettingEntity::getProjectKey, key));
+
+        if(LocalDateTime.now().isBefore(LocalDateTime.parse(entity.getStartTime().toString()))){
+            return Result.failed("问卷还未开始");
+        }
+
+        if(LocalDateTime.now().isAfter(LocalDateTime.parse(entity.getEndTime().toString()))){
+            return Result.failed("问卷已经结束");
+        }
+
         UserProjectEntity project = projectService.getByKey(key);
         List<UserProjectItemEntity> projectItemList = projectItemService.listByProjectKey(key);
         UserProjectThemeVo themeVo = userProjectThemeService.getUserProjectDetails(key);
@@ -497,6 +512,7 @@ public class UserProjectController {
      * 项目更新
      *
      * @param project
+     *
      */
     @Login
     @PostMapping("/user/project/update")

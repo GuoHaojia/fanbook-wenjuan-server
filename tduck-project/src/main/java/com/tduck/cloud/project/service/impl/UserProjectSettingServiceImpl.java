@@ -44,34 +44,40 @@ public class UserProjectSettingServiceImpl extends ServiceImpl<UserProjectSettin
         if (ObjectUtil.isNull(userProjectEntity) || userProjectEntity.getStatus() != ProjectStatusEnum.RELEASE) {
             return Result.success(null, "项目暂时无法填写");
         }
+
         UserProjectSettingEntity setting = this
                 .getOne(Wrappers.<UserProjectSettingEntity>lambdaQuery().eq(UserProjectSettingEntity::getProjectKey, projectKey));
         if (ObjectUtil.isNull(setting)) {
             return Result.success(setting);
         }
-        Optional<LocalDateTime> timedCollectionBeginTime = Optional.ofNullable(setting.getTimedCollectionBeginTime());
-        Optional<LocalDateTime> timedCollectionEndTime = Optional.ofNullable(setting.getTimedCollectionEndTime());
+
+        Optional<LocalDateTime> timedCollectionBeginTime = Optional.ofNullable(setting.getStartTime());
+        Optional<LocalDateTime> timedCollectionEndTime = Optional.ofNullable(setting.getEndTime());
         LocalDateTime now = LocalDateTime.now();
         //时间未开始
         if (timedCollectionBeginTime.isPresent() && timedCollectionBeginTime.get().isAfter(now)) {
             return Result.success(null, StringUtils.isEmpty(setting.getTimedNotEnabledPromptText()) ? "项目时间末开始。" : setting.getTimedNotEnabledPromptText());
         }
+
         //时间已经结束
         if (timedCollectionEndTime.isPresent() && timedCollectionEndTime.get().isBefore(now)) {
             return Result.success(null, StringUtils.isEmpty(setting.getTimedDeactivatePromptText()) ? "项目时间已结束。" : setting.getTimedDeactivatePromptText());
         }
+
         //收集数量达到
-        Integer timedQuantitativeQuantity = setting.getTimedQuantitativeQuantity();
-        if (Optional.ofNullable(timedQuantitativeQuantity).isPresent() && 0 != timedQuantitativeQuantity) {
-            int resultCount = userProjectResultService.count(Wrappers.<UserProjectResultEntity>lambdaQuery().eq(UserProjectResultEntity::getProjectKey, projectKey));
-            if (resultCount >= timedQuantitativeQuantity) {
-                return Result.success(setting, StringUtils.isEmpty(setting.getTimedEndPromptText()) ? "收集数量已达到。" : setting.getTimedEndPromptText());
-            }
-        }
+        //Integer timedQuantitativeQuantity = setting.getTimedQuantitativeQuantity();
+        //if (Optional.ofNullable(timedQuantitativeQuantity).isPresent() && 0 != timedQuantitativeQuantity) {
+        //    int resultCount = userProjectResultService.count(Wrappers.<UserProjectResultEntity>lambdaQuery().eq(UserProjectResultEntity::getProjectKey, projectKey));
+        //    if (resultCount >= timedQuantitativeQuantity) {
+        //        return Result.success(setting, StringUtils.isEmpty(setting.getTimedEndPromptText()) ? "收集数量已达到。" : setting.getTimedEndPromptText());
+        //    }
+        //}
+
         //每个人只需填写一次 根据IP判断
-        Boolean everyoneWriteOnce = setting.getEveryoneWriteOnce();
+        //Boolean everyoneWriteOnce = setting.getEveryoneWriteOnce();
         Boolean everyoneDayWriteOnce = setting.getEveryoneDayWriteOnce();
-        if (everyoneWriteOnce || everyoneDayWriteOnce) {
+        //if (everyoneWriteOnce || everyoneDayWriteOnce) {
+        if (everyoneDayWriteOnce) {
             LambdaQueryWrapper<UserProjectResultEntity> wrapper = Wrappers.<UserProjectResultEntity>lambdaQuery()
                     .eq(UserProjectResultEntity::getProjectKey, projectKey)
                     .eq(UserProjectResultEntity::getSubmitRequestIp, requestIp);
@@ -84,11 +90,12 @@ public class UserProjectSettingServiceImpl extends ServiceImpl<UserProjectSettin
                 return Result.success(null, setting.getWriteOncePromptText());
             }
         }
-        //每个微信仅填写一次
+
+        //每个fanbookid仅填写一次
         if (setting.getWxWriteOnce() && StrUtil.isNotEmpty(wxOpenId)) {
             LambdaQueryWrapper<UserProjectResultEntity> wrapper = Wrappers.<UserProjectResultEntity>lambdaQuery()
                     .eq(UserProjectResultEntity::getProjectKey, projectKey)
-                    .eq(UserProjectResultEntity::getWxOpenId, wxOpenId);
+                    .eq(UserProjectResultEntity::getFbUserid, wxOpenId);
             int writeCount = userProjectResultService.count(wrapper);
             if (CommonConstants.ConstantNumber.ONE <= writeCount) {
                 return Result.success(null, "已经填写过，无法再次填写");

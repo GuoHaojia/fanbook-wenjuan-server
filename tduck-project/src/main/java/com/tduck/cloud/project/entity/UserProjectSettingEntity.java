@@ -1,6 +1,8 @@
 package com.tduck.cloud.project.entity;
 
 
+import cn.hutool.core.date.DatePattern;
+import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -56,6 +58,14 @@ public class UserProjectSettingEntity extends BaseEntity<UserProjectSettingEntit
      */
     @TableField("is_wx_write_once")
     private Boolean wxWriteOnce;
+
+
+    /**
+     * 填写时授权fanbookid
+     */
+    @TableField("empower")
+    private Boolean empower;
+
     /**
      * 每人只能填写一次
      */
@@ -66,6 +76,20 @@ public class UserProjectSettingEntity extends BaseEntity<UserProjectSettingEntit
      */
     @TableField("is_everyone_day_write_once")
     private Boolean everyoneDayWriteOnce;
+
+    /**
+     * 问卷开始时间
+     * */
+    @TableField(fill = FieldFill.INSERT_UPDATE)
+    @JsonFormat(pattern = DatePattern.NORM_DATETIME_PATTERN)
+    private LocalDateTime startTime;
+
+    /**
+     * 问卷结束时间
+     * */
+    @TableField(fill = FieldFill.INSERT_UPDATE)
+    @JsonFormat(pattern = DatePattern.NORM_DATETIME_PATTERN)
+    private LocalDateTime endTime;
     /**
      * 填写之后提示
      */

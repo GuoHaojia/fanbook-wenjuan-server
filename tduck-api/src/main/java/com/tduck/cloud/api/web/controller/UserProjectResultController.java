@@ -114,16 +114,14 @@ public class UserProjectResultController {
             entity.setGuildName("测试服务");
         }
 
-
         ValidatorUtils.validateEntity(entity);
         entity.setSubmitRequestIp(HttpUtils.getIpAddr(request));
 
         //校验时间 填写次数等
-        Result<UserProjectSettingEntity> userProjectSettingStatus = userProjectSettingService.getUserProjectSettingStatus(entity.getProjectKey(), entity.getSubmitRequestIp(), entity.getWxOpenId());
+        Result<UserProjectSettingEntity> userProjectSettingStatus = userProjectSettingService.getUserProjectSettingStatus(entity.getProjectKey(), entity.getSubmitRequestIp(), entity.getFbUserid());
         if (StrUtil.isNotBlank(userProjectSettingStatus.getMsg())) {
             return Result.failed(userProjectSettingStatus.getMsg());
         }
-
 
         projectResultService.saveProjectResult(entity);
 
