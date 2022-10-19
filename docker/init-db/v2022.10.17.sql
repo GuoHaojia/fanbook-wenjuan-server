@@ -18,17 +18,33 @@ Target Server Type    : MYSQL
 Target Server Version : 50737
 File Encoding         : 65001
 
-Date: 2022-10-17 16:45:33
+Date: 2022-10-19 09:56:49
 */
 
 SET FOREIGN_KEY_CHECKS=0;
+
+-- ----------------------------
+-- Table structure for pr_project_prize
+-- ----------------------------
+DROP TABLE IF EXISTS `pr_project_prize`;
+CREATE TABLE `pr_project_prize` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `type` tinyint(1) DEFAULT NULL,
+  `project_key` varchar(100) DEFAULT NULL,
+  `count` int(11) DEFAULT NULL,
+  `desc` varchar(255) CHARACTER SET utf8mb4 DEFAULT NULL,
+  `status` tinyint(1) NOT NULL DEFAULT '1' COMMENT '启用禁用',
+  `create_time` datetime DEFAULT NULL,
+  `update_time` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=latin1;
 
 -- ----------------------------
 -- Table structure for pr_project_prize_item
 -- ----------------------------
 DROP TABLE IF EXISTS `pr_project_prize_item`;
 CREATE TABLE `pr_project_prize_item` (
-  `id` int(11) DEFAULT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `type` tinyint(1) NOT NULL DEFAULT '1' COMMENT '1积分 0CDK',
   `project_key` varchar(100) DEFAULT NULL,
   `fanbookid` varchar(255) DEFAULT NULL,
@@ -36,8 +52,12 @@ CREATE TABLE `pr_project_prize_item` (
   `phone_number` varchar(11) DEFAULT NULL,
   `status` tinyint(1) NOT NULL DEFAULT '1' COMMENT '1启用 0禁用',
   `get_time` datetime DEFAULT NULL COMMENT '获取时间',
-  `prize` varchar(255) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='奖品表';
+  `prize` varchar(255) DEFAULT NULL,
+  `prizeid` int(11) DEFAULT NULL,
+  `create_time` datetime DEFAULT NULL,
+  `update_time` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COMMENT='奖品表';
 
 -- ----------------------------
 -- Table structure for pr_project_prize_setting
@@ -48,9 +68,9 @@ CREATE TABLE `pr_project_prize_setting` (
   `type` tinyint(1) NOT NULL DEFAULT '1' COMMENT '发奖方式 1立即发 0问卷结束发',
   `project_key` varchar(100) DEFAULT NULL,
   `probability` int(11) DEFAULT '1' COMMENT '中奖率分母',
-  `count` int(11) DEFAULT NULL COMMENT '奖品总数',
   `update_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `status` tinyint(1) NOT NULL DEFAULT '1' COMMENT '1启用0禁用',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='奖品设置';
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COMMENT='奖品设置';
+
