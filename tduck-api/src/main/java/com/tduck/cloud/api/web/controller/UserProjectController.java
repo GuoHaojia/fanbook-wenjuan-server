@@ -493,11 +493,11 @@ public class UserProjectController {
         UserProjectSettingEntity entity = userProjectSettingService
                 .getOne(Wrappers.<UserProjectSettingEntity>lambdaQuery().eq(UserProjectSettingEntity::getProjectKey, key));
 
-        if(LocalDateTime.now().isBefore(LocalDateTime.parse(entity.getStartTime().toString()))){
+        if(entity.getStartTime() != null && LocalDateTime.now().isBefore(LocalDateTime.parse(entity.getStartTime().toString()))){
             return Result.failed("问卷还未开始");
         }
 
-        if(LocalDateTime.now().isAfter(LocalDateTime.parse(entity.getEndTime().toString()))){
+        if(entity.getEndTime() != null && LocalDateTime.now().isAfter(LocalDateTime.parse(entity.getEndTime().toString()))){
             return Result.failed("问卷已经结束");
         }
 
