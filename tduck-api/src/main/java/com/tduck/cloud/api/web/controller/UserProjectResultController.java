@@ -23,16 +23,10 @@ import com.tduck.cloud.common.email.MailService;
 import com.tduck.cloud.common.util.RedisUtils;
 import com.tduck.cloud.common.util.Result;
 import com.tduck.cloud.common.validator.ValidatorUtils;
-import com.tduck.cloud.project.entity.UserProjectEntity;
-import com.tduck.cloud.project.entity.UserProjectLogicEntity;
-import com.tduck.cloud.project.entity.UserProjectResultEntity;
-import com.tduck.cloud.project.entity.UserProjectSettingEntity;
+import com.tduck.cloud.project.entity.*;
 import com.tduck.cloud.project.entity.enums.ProjectLogicExpressionEnum;
 import com.tduck.cloud.project.request.QueryProjectResultRequest;
-import com.tduck.cloud.project.service.UserProjectLogicService;
-import com.tduck.cloud.project.service.UserProjectResultService;
-import com.tduck.cloud.project.service.UserProjectService;
-import com.tduck.cloud.project.service.UserProjectSettingService;
+import com.tduck.cloud.project.service.*;
 import com.tduck.cloud.project.vo.ExportProjectResultVO;
 import com.tduck.cloud.wx.mp.service.WxMpUserMsgService;
 import lombok.Data;
@@ -47,8 +41,10 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -77,6 +73,9 @@ public class UserProjectResultController {
 
     private final UserProjectLogicService projectLogicService;
     private final UserService userService;
+
+    private final ProjectPrizeSettingService projectPrizeSettingService;
+    private final ProjectPrizeItemService projectPrizeItemService;
 
     @Value("${devdebug}")
     private boolean debug;
@@ -125,15 +124,17 @@ public class UserProjectResultController {
 
         projectResultService.saveProjectResult(entity);
 
-        //结算奖励 奖励同步返回 异步投送通知
+
+        ///fbuserid 转uid
+        QueryWrapper<UserEntity> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("fb_user", entity.getFbUserid());
+        UserEntity userEntity = userService.getOne(queryWrapper);
 
         //分配角色内容
         List<UserProjectLogicEntity> entityList = projectLogicService.list(Wrappers.<UserProjectLogicEntity>lambdaQuery().eq(UserProjectLogicEntity::getProjectKey, entity.getProjectKey()).eq(UserProjectLogicEntity::getType,3));
 
         for(UserProjectLogicEntity logic : entityList){
             //每个角色逻辑
-
-            Logger logger = Logger.getLogger("test");
 
             Set<UserProjectLogicEntity.Condition> set = logic.getConditionList();
 
@@ -164,15 +165,11 @@ public class UserProjectResultController {
                 flag = 2;
             }
 
-            //构建角色 赋予用户
-            if(flag == 2){
-                ///fbuserid 转uid
-                QueryWrapper<UserEntity> queryWrapper = new QueryWrapper<>();
-                queryWrapper.eq("fb_user", entity.getFbUserid());
-                UserEntity dbUserEntity = userService.getOne(queryWrapper);
+            //构建角色 赋予用户  或者不走逻辑判断
+            if(flag == 2 || logic.getRoleType() == false){
 
                 UserRoleVo userRoleVo = new UserRoleVo();
-                userRoleVo.setUserid(dbUserEntity.getId());
+                userRoleVo.setUserid(userEntity.getId());
                 userRoleVo.setRoleid(logic.getFormItemId());
                 userRoleVo.setRolestatus(1);
 
@@ -181,11 +178,56 @@ public class UserProjectResultController {
         }
         //分配角色内容 end
 
+
         ThreadUtil.execAsync(() -> {
             //异步邮件通知
             UserProjectSettingEntity settingEntity = userProjectSettingStatus.isDataNull() ? null : userProjectSettingStatus.getData();
             this.sendWriteResultNotify(settingEntity, entity);
         });
+
+        //结算奖励 奖励同步返回
+        List<ProjectPrizeSettingEntity> settingList = projectPrizeSettingService.lambdaQuery().eq(ProjectPrizeSettingEntity::getProjectKey,entity.getProjectKey()).list();
+        if(settingList.size() > 0){
+            ProjectPrizeSettingEntity setting = settingList.get(0);
+
+            if(setting.getType() == 1 )
+            {
+                ///立即发放
+                if(setting.getProbability() == 1 || (int)Math.random()*(setting.getProbability()+1) == 1)
+                {
+                    //逻辑中奖
+                    List<ProjectPrizeItemEntity> prizeList = projectPrizeItemService.lambdaQuery()
+                            .eq(ProjectPrizeItemEntity::getProjectKey,entity.getProjectKey())
+                            .eq(ProjectPrizeItemEntity::getFanbookid,"")
+                            .eq(ProjectPrizeItemEntity::getStatus,true).list();
+
+                    if(prizeList.size() > 0)
+                    {
+                        ProjectPrizeItemEntity prizeItem = prizeList.get(0);
+                        ProjectPrizeItemEntity newItem = ProjectPrizeItemEntity.builder()
+                                .phoneNumber(userEntity.getPhoneNumber())
+                                .fanbookid(entity.getFbUserid())
+                                .nickname(userEntity.getName())
+                                .getTime(LocalDateTime.now())
+                                .build();
+                        Boolean result = projectPrizeItemService.lambdaUpdate().eq(ProjectPrizeItemEntity::getId,prizeItem.getId())
+                                .update(newItem);
+
+                        if(result){
+                            if(prizeItem.getType() == 1){
+                                //添加积分  等待甲方api
+
+                            }
+
+                            //中奖了 如果是积分
+                            return Result.success(newItem);
+                        }
+                    }
+                }
+            }
+        }
+        //结算奖励 奖励同步返回
+
         return Result.success();
     }
 

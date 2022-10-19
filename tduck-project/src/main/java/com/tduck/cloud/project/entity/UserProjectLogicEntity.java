@@ -40,6 +40,13 @@ public class UserProjectLogicEntity extends BaseEntity<UserProjectLogicEntity> {
      *
      */
     private Integer type;
+
+    /**
+     *
+     * true 走逻辑
+     * false 不走逻辑
+     * */
+    private Boolean roleType;
     /**
      * 条件成立的表达式
      */
