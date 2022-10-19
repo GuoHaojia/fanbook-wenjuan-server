@@ -161,9 +161,18 @@ public class PrizeController {
 
     @Login
     @PostMapping("/prize/win")
-    @ApiOperation("中奖情况")
+    @ApiOperation("问卷中奖情况")
     public Result win(@RequestParam String projectKey ){
         return Result.success(projectPrizeItemService.lambdaQuery().eq(ProjectPrizeItemEntity::getProjectKey,projectKey).eq(ProjectPrizeItemEntity::getStatus,true).list());
+    }
+
+
+
+    @Login
+    @PostMapping("/prize/info")
+    @ApiOperation("用户中奖情况")
+    public Result info(@RequestParam String fanbookid ){
+        return Result.success(projectPrizeItemService.lambdaQuery().eq(ProjectPrizeItemEntity::getFanbookid,fanbookid).eq(ProjectPrizeItemEntity::getStatus,true).list());
     }
 
     @Login
