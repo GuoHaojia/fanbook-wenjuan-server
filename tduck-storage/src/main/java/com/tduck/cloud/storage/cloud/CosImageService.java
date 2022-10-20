@@ -10,6 +10,7 @@ import com.qcloud.cos.model.PutObjectResult;
 import com.qcloud.cos.region.Region;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -42,10 +43,14 @@ public class CosImageService {
     }
 
 
-    private static String secretId = "secretId";
-    private static String secretKey = "secretKey";
-    private static String bucketName = "bucketName";
-    private static String regionStr = "ap-shanghai";
+    @Value("${platform.cosApp.secretId}")
+    private String secretId;
+    @Value("${platform.cosApp.secretKey}")
+    private String secretKey;
+    @Value("${platform.cosApp.bucket}")
+    private String bucketName;
+    @Value("${platform.cosApp.region}")
+    private String regionStr;
 
 
     private void initClient() {
@@ -61,12 +66,13 @@ public class CosImageService {
         cosClient = new COSClient(cred, clientConfig);
     }
 
-    public String upload(String fileName, Long id, File file, String md5) {
+    public String upload(String fileName, Long id, File file, String md5, String folder) {
         String fileFormat = fileName.substring(fileName.lastIndexOf("."));
-        String key = String.valueOf(id).concat("-").concat(md5.substring(0, 8)).concat(fileFormat);
+        //同一个用户的文件放在一个目录下
+        String key = folder.concat("/" + String.valueOf(id)).concat("-").concat(md5.substring(0, 8)).concat(fileFormat);
         PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, key, file);
         PutObjectResult putObjectResult = cosClient.putObject(putObjectRequest);
-        //examplebucket-1250000000.cos.ap-guangzhou.myqcloud.com/images/picture.jpg
+        //examplebucket-1250000000.cos.ap-guangzhou.myqcloud.com/用户MD5id/picture.jpg
         return "https://".concat(bucketName).concat(".cos.").concat(regionStr).concat(".myqcloud.com/").concat(key);
     }
 
