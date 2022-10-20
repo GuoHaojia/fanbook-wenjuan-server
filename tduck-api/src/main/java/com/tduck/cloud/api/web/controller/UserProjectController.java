@@ -1,6 +1,7 @@
 package com.tduck.cloud.api.web.controller;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
@@ -18,6 +19,7 @@ import com.tduck.cloud.account.service.UserService;
 import com.tduck.cloud.api.annotation.Login;
 import com.tduck.cloud.api.util.DateConvertUtils;
 import com.tduck.cloud.api.util.HttpUtils;
+import com.tduck.cloud.api.web.fb.service.OauthService;
 import com.tduck.cloud.common.constant.CommonConstants;
 import com.tduck.cloud.common.constant.FanbookCard;
 import com.tduck.cloud.common.entity.BaseEntity;
@@ -89,6 +91,10 @@ public class UserProjectController {
     private final RedisUtils redisUtils;
     private final FanbookService fanbookService;
     private final WxMpService wxMpService;
+
+    private final ProjectPrizeSettingService projectPrizeSettingService;
+    private final ProjectPrizeItemService projectPrizeItemService;
+    private final OauthService oauthService;
 
 
     @Value("${fb.open.redirect_uri}")
@@ -458,9 +464,74 @@ public class UserProjectController {
     @Login
     @PostMapping("/user/project/stop")
     public Result stopProject(@RequestBody UserProjectEntity request) {
+        /**
+         * 抽奖
+         * */
+
+        List<ProjectPrizeSettingEntity> settingList = projectPrizeSettingService.lambdaQuery().eq(ProjectPrizeSettingEntity::getProjectKey,request.getKey()).list();
+        if(settingList.size() > 0) {
+            ProjectPrizeSettingEntity setting = settingList.get(0);
+
+            if (setting.getType() != 1) {
+                ///问卷停止后发放
+                List<UserProjectResultEntity> list = projectResultService.lambdaQuery().eq(UserProjectResultEntity::getProjectKey,request.getKey()).list();
+
+                for (UserProjectResultEntity item : list){
+                    if(winPrize(setting,request.getKey(),item) == false){
+                        break;
+                    }
+                }
+            }
+        }
+        //抽奖 end
+
         UserProjectEntity entity = projectService.getByKey(request.getKey());
         entity.setStatus(ProjectStatusEnum.STOP);
         return Result.success(projectService.updateById(entity));
+    }
+
+    private Boolean winPrize(ProjectPrizeSettingEntity setting,String projectKey,UserProjectResultEntity userProjectResultEntity){
+        if(setting.getProbability() == 1 || (int)Math.random()*(setting.getProbability()+1) == 1)
+        {
+            //中奖逻辑
+            List<ProjectPrizeItemEntity> prizeList = projectPrizeItemService.lambdaQuery()
+                    .eq(ProjectPrizeItemEntity::getProjectKey,projectKey)
+                    .eq(ProjectPrizeItemEntity::getFanbookid,"")
+                    .eq(ProjectPrizeItemEntity::getStatus,true).list();
+
+            if(prizeList.size() > 0)
+            {
+                UserEntity userEntity = userService.getOne(Wrappers.<UserEntity>lambdaQuery().eq(UserEntity::getFbUser,userProjectResultEntity.getFbUserid()));
+
+                //可以中奖
+                ProjectPrizeItemEntity prizeItem = prizeList.get(0);
+                ProjectPrizeItemEntity newItem = ProjectPrizeItemEntity.builder()
+                        .phoneNumber(userEntity.getPhoneNumber())
+                        .fanbookid(userEntity.getFbUser())
+                        .nickname(userEntity.getName())
+                        .getTime(LocalDateTime.now())
+                        .build();
+
+                Boolean result = projectPrizeItemService.lambdaUpdate().eq(ProjectPrizeItemEntity::getId,prizeItem.getId())
+                        .update(newItem);
+
+                if(result) {
+                    if (prizeItem.getType() == 1) {
+
+                        ThreadUtil.execAsync(() -> {
+                            //添加积分
+                            oauthService.modifyUserPoint(prizeItem.getId() + "", Long.valueOf(userProjectResultEntity.getGuildId()), Long.valueOf(userProjectResultEntity.getFbUserid()), Integer.valueOf(prizeItem.getPrize()), "奖励积分");
+                        });
+                    }
+                }
+                return true;
+            }else{
+                //奖品不足 停止发奖
+                return false;
+            }
+        }else{
+            return true;
+        }
     }
 
     /**

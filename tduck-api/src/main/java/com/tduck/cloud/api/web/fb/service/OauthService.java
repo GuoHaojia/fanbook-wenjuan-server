@@ -1,5 +1,6 @@
 package com.tduck.cloud.api.web.fb.service;
 
+import cn.hutool.crypto.digest.DigestUtil;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
@@ -10,13 +11,17 @@ import com.tduck.cloud.account.entity.FanbookMember;
 import com.tduck.cloud.account.entity.FanbookRole;
 import com.tduck.cloud.account.entity.UserInfo;
 import com.tduck.cloud.account.util.OkHttpUtils;
+import com.tduck.cloud.account.vo.Sign;
+import com.tduck.cloud.account.vo.UserPoint;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import java.util.List;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.concurrent.Future;
 import java.util.logging.Logger;
 
@@ -43,6 +48,26 @@ public class OauthService {
     @Value("${fb.open.api.robothost}")
     String robothost;
 
+
+    /**
+     * 积分接口系列参数
+     */
+    @Value("${fb.open.api.scorehost}")
+    String scorehost;
+
+    @Value("${fb.open.api.appkey}")
+    String appkey;
+
+    @Value("${fb.open.api.appsecret}")
+    String appsecret;
+
+    @Value("${fb.open.api.getuserscore}")
+    String getuserscore;
+
+    @Value("${fb.open.api.modifyuserpoint}")
+    String modifyuserpoint;
+
+
     public JSONObject getToken(String code) {
         String base64String = clientID + ":" + sceret;
 //        byte[] result1 = Base64.encodeBase64(base64String.getBytes());
@@ -59,11 +84,11 @@ public class OauthService {
                 .post(false)
                 .sync();
         log.debug("getToken");
-        log.debug("code:"+code);
+        log.debug("code:" + code);
         log.debug("parameter:" + openUrl + apiTokenUrl);
         log.debug("parameter:" + str11);
         log.debug("parameter:" + redirectUri);
-        log.debug("rJson:"+rJson);
+        log.debug("rJson:" + rJson);
         return JSONObject.parseObject(rJson);
     }
 
@@ -84,6 +109,7 @@ public class OauthService {
         }
         return userInfo;
     }
+
     public JSONObject getGuilds(String access_token) {
         String rJson = OkHttpUtils
                 .builder().url(openUrl + apiGetGuildsUrl)
@@ -131,15 +157,15 @@ public class OauthService {
         if (null != rJson) {
             JSONArray userJson = JSONObject.parseObject(rJson).getJSONArray("result");
             String js = JSONObject.toJSONString(userJson);
-            List<FanbookRole> retn = JSONObject.parseArray(js,FanbookRole.class);
+            List<FanbookRole> retn = JSONObject.parseArray(js, FanbookRole.class);
             return retn;
-        }else{
+        } else {
             return null;
         }
 
     }
 
-    public List<FanbookMember> getRoleMembers(String access_token, String guildId, String roleId){
+    public List<FanbookMember> getRoleMembers(String access_token, String guildId, String roleId) {
         String rJson = OkHttpUtils
                 .builder().url(robothost + "/" + access_token + "/getRoleMembers")
                 .addHeader("content-type", "application/json")
@@ -153,11 +179,150 @@ public class OauthService {
             JSONArray userJson = JSONObject.parseObject(rJson).getJSONArray("result");
 
             String js = JSONObject.toJSONString(userJson);
-            List<FanbookMember> retn = JSONObject.parseArray(js,FanbookMember.class,new ParserConfig(true));
+            List<FanbookMember> retn = JSONObject.parseArray(js, FanbookMember.class, new ParserConfig(true));
             return retn;
-        }else{
+        } else {
             return null;
         }
     }
 
+    public String existsMember(String access_token , String guild_id, String member_id){
+        String rJson = OkHttpUtils
+                .builder().url(robothost + "/" + access_token + "/guild/existsMember")
+                .addHeader("content-type", "application/json")
+                .addHeader("authorization", "Bearer " + access_token)
+                .addParam("guild_id",guild_id)
+                .addParam("member_id",member_id)
+                .post(true)
+                .sync();
+
+        return JSONObject.parseObject(rJson).getJSONObject("result").get("exists").toString();
+    }
+
+    public void modifyUserPoint(String bizId,Long guildId,Long fbLongId,Integer point,String remark){
+        JSONObject data = new JSONObject();
+        data.put("bizId",bizId);
+        data.put("fbLongId",fbLongId);
+        data.put("guildId",guildId);
+        data.put("point",point);
+        data.put("remark",remark);
+
+        Sign sign = Sign.builder()
+                .appKey(appkey)
+                .nonce(UUID.randomUUID().toString())
+                .timestamp(System.currentTimeMillis() + "")
+                .build();
+
+        Map<String, String> signmap = new LinkedHashMap<>();
+        signmap.put("AppKey", sign.getAppKey());
+        signmap.put("Nonce", sign.getNonce());
+        signmap.put("Timestamp", sign.getTimestamp());
+        signmap.put("requestBody", data.toJSONString());
+
+        String rJson = OkHttpUtils
+                .builder().url(scorehost + modifyuserpoint)
+                .addHeader("AppKey", sign.getAppKey())
+                .addHeader("Nonce", sign.getNonce())
+                .addHeader("Timestamp", sign.getTimestamp())
+                .addHeader("Signature", getSign(signmap))
+                .addHeader("content-type", "application/json")
+                .post(data.toJSONString())
+                .sync();
+
+
+        Logger.getLogger("积分接口").info(rJson);
+    }
+
+    public UserPoint getUserScore(String guildId, String userId) {
+
+        Sign sign = Sign.builder()
+                .appKey(appkey)
+                .nonce(UUID.randomUUID().toString())
+                .timestamp(System.currentTimeMillis() + "")
+                .build();
+
+        Map<String, String> signmap = new LinkedHashMap<>();
+        signmap.put("AppKey", sign.getAppKey());
+        signmap.put("Nonce", sign.getNonce());
+        signmap.put("Timestamp", sign.getTimestamp());
+        signmap.put("guildId", guildId);
+        signmap.put("userId", userId);
+
+        String rJson = OkHttpUtils
+                .builder().url(scorehost + getuserscore)
+                .addHeader("AppKey", sign.getAppKey())
+                .addHeader("Nonce", sign.getNonce())
+                .addHeader("Timestamp", sign.getTimestamp())
+                .addHeader("Signature", getSign(signmap))
+                .addHeader("content-type", "application/json")
+                .addParam("guildId",guildId)
+                .addParam("userId",userId)
+                .get()
+                .sync();
+
+        UserPoint userPoint = null;
+        JSONObject userJson = JSONObject.parseObject(rJson).getJSONObject("data");
+        if (null != userJson) {
+            userPoint = userJson.toJavaObject(UserPoint.class);
+        }
+
+        return userPoint;
+    }
+
+    private String getSign(Map<String, String> signmap) {
+        try {
+            log.info(appsecret + "&" + generateParams(signmap, "") + "&" + appsecret);
+            //测试
+            return signEncode(appsecret + "&" + generateParams(signmap, "") + "&" + appsecret);
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+            return "";
+        }
+    }
+
+    private String signEncode(String str) throws UnsupportedEncodingException {
+        return URLEncoder.encode(DigestUtil.md5Hex(str,"UTF-8").toString(),"UTF-8");
+    }
+
+    private String generateParams(Map<String, String> params, String charset) throws UnsupportedEncodingException {
+
+        int flag = 0;
+
+        StringBuffer ret = new StringBuffer();
+
+        Iterator iter = params.entrySet().iterator();
+
+        while (iter.hasNext()) {
+
+            Map.Entry entry = (Map.Entry) iter.next();
+            Object key = entry.getKey();
+            Object val = entry.getValue();
+            if (val != null) {
+                if (flag == 0) {
+                    ret.append(key);
+                    ret.append("=");
+                    if (charset != null && !charset.equals("")) {
+                        ret.append(URLEncoder.encode(val.toString(), charset));
+                    } else {
+                        ret.append(val.toString());
+                    }
+                    flag++;
+                } else {
+                    ret.append("&");
+                    ret.append(key);
+                    ret.append("=");
+                    if (charset != null && !charset.equals("")) {
+                        ret.append(URLEncoder.encode(val.toString(), charset));
+                    } else {
+                        ret.append(val.toString());
+
+                    }
+                }
+
+            }
+
+        }
+
+        return ret.toString();
+    }
 }
