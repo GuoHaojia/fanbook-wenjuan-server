@@ -8,6 +8,7 @@ import com.tduck.cloud.account.entity.UserEntity;
 import com.tduck.cloud.account.service.UserService;
 import com.tduck.cloud.account.entity.UserInfo;
 import com.tduck.cloud.account.util.JwtUtils;
+import com.tduck.cloud.account.vo.UserPoint;
 import com.tduck.cloud.api.util.HttpUtils;
 import com.tduck.cloud.api.web.fb.service.OauthService;
 import com.tduck.cloud.common.util.Result;
@@ -20,6 +21,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.*;
+import java.util.logging.Logger;
 
 @RequestMapping("/fanbook")
 @RestController
@@ -30,6 +32,21 @@ public class UserLoginFBController {
     String fanbookOauthPage;
     private final OauthService oauthService;
     private final UserService userService;
+
+    @GetMapping("/getuserscore")
+    public Result getUserScore(@RequestParam("guild_id") String guild_id,@RequestParam("member_id") String member_id){
+        UserPoint userPoint = oauthService.getUserScore(guild_id,member_id);
+        return Result.success(userPoint);
+    }
+
+    /**
+     * 查询当前服务器是否存在积分商城
+     * */
+    @RequestMapping(value = "/exist/score", method = RequestMethod.GET)
+    public Result existScoreShop(@RequestParam("guild_id") String guild_id,@RequestParam("member_id") String member_id,@RequestParam("access_token") String access_token) {
+
+        return Result.success(oauthService.existsMember(access_token,guild_id,member_id));
+    }
 
     /**
      * 授权回调地址

@@ -87,4 +87,9 @@ fb:
       getGuilds: /api/guild/getGuilds
       sendMessage: /sendMessage
       robothost: https://a1.fanbook.mobi/api/bot
+      scorehost: https://open.fanbook.mobi/mp/138519745866498048/368331042878263296/shop-manage-pc
+      appkey: qfslsezpodin5oaumu2w
+      appsecret: j6iu8fi6zxasvrtwhdr5
+      getuserscore: /api/core/open/getUserPoint
+      modifyuserpoint: /api/core/open/modifyUserPoint
 

@@ -4,8 +4,10 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.tduck.cloud.account.entity.enums.AccountChannelEnum;
 import com.tduck.cloud.common.entity.BaseEntity;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
@@ -18,6 +20,8 @@ import java.time.LocalDateTime;
 @Data
 @TableName("ac_user")
 @Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class UserEntity extends BaseEntity<UserEntity> {
     @TableId
     private Long id;

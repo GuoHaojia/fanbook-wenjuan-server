@@ -16,6 +16,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
 public class OkHttpUtils {
     private static volatile OkHttpClient okHttpClient = null;
@@ -171,6 +172,12 @@ public class OkHttpUtils {
         return this;
     }
 
+    public OkHttpUtils post(String request_params){
+        RequestBody requestBody  = RequestBody.create(MediaType.parse("application/json; charset=utf-8"), request_params);
+        request = new Request.Builder().post(requestBody).url(url);
+        return this;
+    }
+
 
 
 
@@ -184,6 +191,7 @@ public class OkHttpUtils {
         try {
             Response response = okHttpClient.newCall(request.build()).execute();
             assert response.body() != null;
+
             return response.body().string();
         } catch (IOException e) {
             e.printStackTrace();
