@@ -402,7 +402,7 @@ public class UserProjectController {
         UserProjectEntity entity = projectService.getByKey(request.getKey());
 
 //        Date parse = new SimpleDateFormat("yyyy-MM-dd HH:mm").parse(request.getPublishTime());
-        Date parse = DateConvertUtils.localDateTimeToDate(ObjectUtil.isNotNull(request.getPublishTime()) ? request.getPublishTime() : LocalDateTime.now());
+        Date parse = StrUtil.isNotBlank(request.getPublishTime()) ? new SimpleDateFormat("yyyy-MM-dd HH:mm").parse(request.getPublishTime()) : new Date(System.currentTimeMillis());
         Timer timer = new Timer();
         timer.schedule(new TimerTask() {
             @Override
@@ -493,12 +493,14 @@ public class UserProjectController {
         UserProjectSettingEntity entity = userProjectSettingService
                 .getOne(Wrappers.<UserProjectSettingEntity>lambdaQuery().eq(UserProjectSettingEntity::getProjectKey, key));
 
-        if(entity.getStartTime() != null && LocalDateTime.now().isBefore(LocalDateTime.parse(entity.getStartTime().toString()))){
-            return Result.failed("问卷还未开始");
-        }
+        if (ObjectUtil.isNotNull(entity)) {
+            if(entity.getStartTime() != null && LocalDateTime.now().isBefore(LocalDateTime.parse(entity.getStartTime().toString()))){
+                return Result.failed("问卷还未开始");
+            }
 
-        if(entity.getEndTime() != null && LocalDateTime.now().isAfter(LocalDateTime.parse(entity.getEndTime().toString()))){
-            return Result.failed("问卷已经结束");
+            if(entity.getEndTime() != null && LocalDateTime.now().isAfter(LocalDateTime.parse(entity.getEndTime().toString()))){
+                return Result.failed("问卷已经结束");
+            }
         }
 
         UserProjectEntity project = projectService.getByKey(key);

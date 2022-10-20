@@ -11,6 +11,7 @@ import cn.hutool.poi.excel.ExcelWriter;
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.tduck.cloud.account.entity.UserEntity;
 import com.tduck.cloud.account.service.UserService;
@@ -46,8 +47,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
+import static com.tduck.cloud.project.constant.ProjectRedisKeyConstants.PROJECT_RESULT_NUMBER;
 import static com.tduck.cloud.project.constant.ProjectRedisKeyConstants.PROJECT_VIEW_IP_LIST;
 
 /**
@@ -93,7 +96,6 @@ public class UserProjectResultController {
         return Result.success();
     }
 
-
     /**
      * 填写
      *
@@ -105,13 +107,15 @@ public class UserProjectResultController {
     @PostMapping("/create")
     public Result createProjectResult(@RequestBody UserProjectResultEntity entity, HttpServletRequest request) {
 
+//        AtomicInteger count = new AtomicInteger();
+
         //本地测试
-        if(debug){
-            entity.setFbUserid("416120040304148480");
-            entity.setFbUsername("3904464");
-            entity.setGuildId("420861300550139904");
-            entity.setGuildName("测试服务");
-        }
+//        if(debug){
+//            entity.setFbUserid("416120040304148480");
+//            entity.setFbUsername("3904464");
+//            entity.setGuildId("420861300550139904");
+//            entity.setGuildName("测试服务");
+//        }
 
         ValidatorUtils.validateEntity(entity);
         entity.setSubmitRequestIp(HttpUtils.getIpAddr(request));
@@ -124,6 +128,10 @@ public class UserProjectResultController {
 
         projectResultService.saveProjectResult(entity);
 
+        UserProjectEntity one = projectService.getOne(Wrappers.<UserProjectEntity>lambdaQuery().eq(UserProjectEntity::getKey, entity.getProjectKey()));
+//        one.setAnswerNum(count.incrementAndGet());
+        one.setAnswerNum((Integer) redisUtils.get(StrUtil.format(PROJECT_RESULT_NUMBER, entity.getProjectKey())));
+        projectService.updateById(one);
 
         ///fbuserid 转uid
         QueryWrapper<UserEntity> queryWrapper = new QueryWrapper<>();

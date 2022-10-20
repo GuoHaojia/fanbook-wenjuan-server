@@ -110,7 +110,5 @@ public class UserProjectEntity extends BaseEntity<UserProjectEntity> {
     List<PublishEntity> publishList;
 
     @TableField(exist = false)
-    @DateTimeFormat(pattern = DatePattern.NORM_DATETIME_MINUTE_PATTERN)
-    @JsonFormat(pattern = DatePattern.NORM_DATETIME_PATTERN)
-    LocalDateTime publishTime;
+    String publishTime;
 }
