@@ -39,10 +39,10 @@ devdebug: True
 
 platform:
   cosApp:
-    secretId: AKID55yeBVbTBhz3tWw86rQlsoX2JPGsEJDt
-    secretKey: TgdJkwrX0CBxWrzsX0FG4dz82iJjwvgE
-    region: ap-shanghai
-    bucket:
+    secretId: AKIDTuBE4h6GBsKK5g5FBsLabNwHYcR3TfdO
+    secretKey: d3GH7j8LMEtMchZEhy3xhGfx41sXyFLF
+    region: ap-nanjing
+    bucket: mofang-1309045093
   oss:
     ossType: 1
     endpoint: 12
@@ -72,7 +72,7 @@ wx:
         aesKey:
 fb:
   bot:
-    token: 1ffc79e9f18c8b730960e67582c7b52f45317067fad673d27f6c83ed8ed39bb2e52c0efcb0f78ad693272ebb11171e57
+    token: 8302590f7379f29b28fbfbcdfbf3c9ca3d3efdaf84d55bb69364c206da31541b1cf156ce14686efcd61296b7030fd08d
     id: 355239222308765696
   open:
     fanbook_oauth_page: https://a1.fanbook.mobi/open/oauth2/authorize?response_type=code&client_id=${fb.open.client}&state=3
