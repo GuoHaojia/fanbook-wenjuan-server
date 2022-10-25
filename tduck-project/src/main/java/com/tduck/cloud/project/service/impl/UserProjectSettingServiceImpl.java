@@ -74,19 +74,19 @@ public class UserProjectSettingServiceImpl extends ServiceImpl<UserProjectSettin
         //}
 
         //每个人只需填写一次 根据IP判断
-        //Boolean everyoneWriteOnce = setting.getEveryoneWriteOnce();
-        Boolean everyoneDayWriteOnce = setting.getEveryoneDayWriteOnce();
-        //if (everyoneWriteOnce || everyoneDayWriteOnce) {
-        if (everyoneDayWriteOnce) {
+        Integer everyoneWriteOnce = setting.getEveryoneWriteOnce();
+        //Boolean everyoneDayWriteOnce = setting.getEveryoneDayWriteOnce();
+        if (everyoneWriteOnce > 0) {
             LambdaQueryWrapper<UserProjectResultEntity> wrapper = Wrappers.<UserProjectResultEntity>lambdaQuery()
                     .eq(UserProjectResultEntity::getProjectKey, projectKey)
                     .eq(UserProjectResultEntity::getSubmitRequestIp, requestIp);
-            if (everyoneDayWriteOnce) {
+            /*if (everyoneDayWriteOnce) {
                 wrapper.apply(StrUtil.format("date_format({},'%Y-%m-%d') = '{}'",
                         StrUtil.toUnderlineCase(BaseEntity.Fields.createTime), DateUtil.today()));
-            }
+            }*/
             int writeCount = userProjectResultService.count(wrapper);
-            if (CommonConstants.ConstantNumber.ONE <= writeCount) {
+            //if (CommonConstants.ConstantNumber.ONE <= writeCount) {
+            if (everyoneWriteOnce <= writeCount) {
                 return Result.success(null, setting.getWriteOncePromptText());
             }
         }

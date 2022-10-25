@@ -70,7 +70,7 @@ public class UserProjectSettingEntity extends BaseEntity<UserProjectSettingEntit
      * 每人只能填写一次
      */
     @TableField("is_everyone_write_once")
-    private Boolean everyoneWriteOnce;
+    private Integer everyoneWriteOnce;
     /**
      * 每人每天只能填写一次
      */
