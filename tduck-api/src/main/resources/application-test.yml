@@ -1,7 +1,7 @@
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://39.97.249.180:11416/tduck?useSSL=false&useUnicode=true&characterEncoding=utf8&serverTimezone=UTC&tinyInt1isBit=false
+    url: jdbc:mysql://39.97.249.180:11416/tduck?useSSL=false&useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&tinyInt1isBit=false
     username: tduckadmin
     password: tduckpassword
     type: com.zaxxer.hikari.HikariDataSource
