@@ -35,7 +35,7 @@ logging:
     com.tduck.cloud: debug
   config: classpath:logback-spring.xml
 
-devdebug: True
+devdebug: False
 
 platform:
   cosApp:
