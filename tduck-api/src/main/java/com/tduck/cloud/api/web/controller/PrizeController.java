@@ -109,9 +109,9 @@ public class PrizeController {
     @Login
     @PostMapping("/prize/cdk/import")
     @ApiOperation("添加cdk奖励")
-    public Result cdkSave(@RequestParam String projectKey , InputStream inputStream){
+    public Result cdkSave(@RequestParam(name = "projectKey") String projectKey, @RequestParam(name = "desc") String desc, InputStream inputStream){
         ProjectPrizeEntity projectPrizeEntity = ProjectPrizeEntity.builder().projectKey(projectKey).build();
-        projectPrizeEntity.setDesc("excel导入cdk");
+        projectPrizeEntity.setDesc(desc);
         projectPrizeEntity.setStatus(true);
         projectPrizeEntity.setType(0);
 
