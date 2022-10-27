@@ -281,9 +281,11 @@ public class UserProjectController {
         }
         entity.setStatus(ProjectStatusEnum.RELEASE);
 
-        Integer publishNum = entity.getPublishNum();
-        publishNum++;
-        entity.setPublishNum(publishNum);
+//        Integer publishNum = entity.getPublishNum();
+//        publishNum++;
+//        entity.setPublishNum(publishNum);
+        entity.setPublishNum((int) redisUtils.incr(StrUtil.format(ProjectRedisKeyConstants.PROJECT_PUBLISH_NUMBER, entity.getKey()), CommonConstants.ConstantNumber.ONE));
+
 //        if (request.getPublishList().size() > 0) {
 //            List<PublishEntity> publishList = request.getPublishList();
 //            publishList.forEach(pe -> {
@@ -436,10 +438,6 @@ public class UserProjectController {
                             Boolean aBoolean=(Boolean)JSONObject.parseObject(rstr).get("ok");
                             obj.setStatus(aBoolean ? 1 : 2);
                             userPublishService.updateById(obj);
-                            if ((aBoolean ? 1 : 2) == 1) {
-                                entity.setPublishNum((int) redisUtils.incr(StrUtil.format(ProjectRedisKeyConstants.PROJECT_PUBLISH_NUMBER, entity.getKey()), CommonConstants.ConstantNumber.ONE));
-                                projectService.updateById(entity);
-                            }
                             log.debug("发送文件返回：" + rstr);
                         }
                     }, parse);
