@@ -18,7 +18,7 @@ public interface ProjectRedisKeyConstants {
     String PROJECT_RESULT_NUMBER = "project:result:number:{}";
 
     /**
-     * 项目推送数自增
+     * 项目发布数自增
      */
     String PROJECT_PUBLISH_NUMBER = "project:publish:number:{}";
 
