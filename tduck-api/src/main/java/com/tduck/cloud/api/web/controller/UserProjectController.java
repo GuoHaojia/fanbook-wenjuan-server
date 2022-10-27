@@ -93,6 +93,7 @@ public class UserProjectController {
     private final WxMpService wxMpService;
 
     private final ProjectPrizeSettingService projectPrizeSettingService;
+    private final ProjectPrizeService projectPrizeService;
     private final ProjectPrizeItemService projectPrizeItemService;
     private final OauthService oauthService;
 
@@ -510,9 +511,9 @@ public class UserProjectController {
                     .eq(ProjectPrizeItemEntity::getFanbookid,"")
                     .eq(ProjectPrizeItemEntity::getStatus,true).list();
 
+            UserEntity userEntity = userService.getOne(Wrappers.<UserEntity>lambdaQuery().eq(UserEntity::getFbUser,userProjectResultEntity.getFbUserid()));
             if(prizeList.size() > 0)
             {
-                UserEntity userEntity = userService.getOne(Wrappers.<UserEntity>lambdaQuery().eq(UserEntity::getFbUser,userProjectResultEntity.getFbUserid()));
 
                 //可以中奖
                 ProjectPrizeItemEntity prizeItem = prizeList.get(0);
@@ -537,7 +538,38 @@ public class UserProjectController {
                 }
                 return true;
             }else{
-                //奖品不足 停止发奖
+                //奖品不足 查询是否有无限量积分
+                //加载无限积分发奖
+                List<ProjectPrizeEntity> unlimitList = projectPrizeService.lambdaQuery()
+                        .eq(ProjectPrizeEntity::getProjectKey,projectKey)
+                        .eq(ProjectPrizeEntity::getCount,0)
+                        .eq(ProjectPrizeEntity::getStatus,true).list();
+
+                if(unlimitList.size() > 0){
+                    ProjectPrizeEntity unlimit = unlimitList.get(0);
+
+                    ProjectPrizeItemEntity prizeItem = ProjectPrizeItemEntity.builder()
+                            .id(null)
+                            .prizeid(unlimit.getId())
+                            .prize(unlimit.getDesc())
+                            .projectKey(projectKey)
+                            .phoneNumber(userEntity.getPhoneNumber())
+                            .fanbookid(userEntity.getFbUser())
+                            .nickname(userEntity.getName())
+                            .getTime(LocalDateTime.now())
+                            .status(true)
+                            .type(1)
+                            .build();
+
+                    Boolean result = projectPrizeItemService.save(prizeItem);
+                    if(result){
+                        if(prizeItem.getType() == 1){
+                            //添加积分
+                            oauthService.modifyUserPoint(prizeItem.getId() + "", Long.valueOf(userProjectResultEntity.getGuildId()), Long.valueOf(userProjectResultEntity.getFbUserid()), Integer.valueOf(prizeItem.getPrize()), "奖励积分");
+                        }
+                    }
+                    return true;
+                }
                 return false;
             }
         }else{

@@ -79,6 +79,7 @@ public class UserProjectResultController {
     private final UserService userService;
 
     private final ProjectPrizeSettingService projectPrizeSettingService;
+    private final ProjectPrizeService projectPrizeService;
     private final ProjectPrizeItemService projectPrizeItemService;
     private final OauthService oauthService;
 
@@ -112,12 +113,12 @@ public class UserProjectResultController {
 //        AtomicInteger count = new AtomicInteger();
 
         //本地测试
-//        if(debug){
-//            entity.setFbUserid("416120040304148480");
-//            entity.setFbUsername("3904464");
-//            entity.setGuildId("420861300550139904");
-//            entity.setGuildName("测试服务");
-//        }
+        //if(debug){
+        //    entity.setFbUserid("416120040304148480");
+        //    entity.setFbUsername("3904464");
+        //    entity.setGuildId("420861300550139904");
+        //    entity.setGuildName("测试服务");
+        //}
 
         ValidatorUtils.validateEntity(entity);
         entity.setSubmitRequestIp(HttpUtils.getIpAddr(request));
@@ -213,6 +214,7 @@ public class UserProjectResultController {
 
                     if(prizeList.size() > 0)
                     {
+                        //有限发奖
                         ProjectPrizeItemEntity prizeItem = prizeList.get(0);
                         ProjectPrizeItemEntity newItem = ProjectPrizeItemEntity.builder()
                                 .phoneNumber(userEntity.getPhoneNumber())
@@ -231,6 +233,38 @@ public class UserProjectResultController {
 
                             //中奖了 如果是积分
                             return Result.success(newItem);
+                        }
+                    }else{
+                        //加载无限积分发奖
+                        List<ProjectPrizeEntity> unlimitList = projectPrizeService.lambdaQuery()
+                                .eq(ProjectPrizeEntity::getProjectKey,entity.getProjectKey())
+                                .eq(ProjectPrizeEntity::getCount,0)
+                                .eq(ProjectPrizeEntity::getStatus,true).list();
+
+                        if(unlimitList.size() > 0){
+                            ProjectPrizeEntity unlimit = unlimitList.get(0);
+
+                            ProjectPrizeItemEntity prizeItem = ProjectPrizeItemEntity.builder()
+                                    .id(null)
+                                    .prizeid(unlimit.getId())
+                                    .prize(unlimit.getDesc())
+                                    .projectKey(entity.getProjectKey())
+                                    .phoneNumber(userEntity.getPhoneNumber())
+                                    .fanbookid(entity.getFbUserid())
+                                    .nickname(userEntity.getName())
+                                    .getTime(LocalDateTime.now())
+                                    .status(true)
+                                    .type(1)
+                                    .build();
+
+                            Boolean result = projectPrizeItemService.save(prizeItem);
+                            if(result){
+                                if(prizeItem.getType() == 1){
+                                    //添加积分
+                                    oauthService.modifyUserPoint(prizeItem.getId()+"",Long.valueOf(entity.getGuildId()),Long.valueOf(entity.getFbUserid()),Integer.valueOf(prizeItem.getPrize()),"奖励积分");
+                                }
+                            }
+                            return Result.success(prizeItem);
                         }
                     }
                 }
