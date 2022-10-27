@@ -1,5 +1,6 @@
 package com.tduck.cloud.api.web.controller;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.tduck.cloud.api.annotation.Login;
 import com.tduck.cloud.common.util.Result;
 import com.tduck.cloud.project.entity.ProjectPrizeEntity;
@@ -25,7 +26,9 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.InputStream;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
 /**
@@ -162,8 +165,16 @@ public class PrizeController {
     @Login
     @PostMapping("/prize/win")
     @ApiOperation("问卷中奖情况")
-    public Result win(@RequestParam String projectKey ){
-        return Result.success(projectPrizeItemService.lambdaQuery().eq(ProjectPrizeItemEntity::getProjectKey,projectKey).eq(ProjectPrizeItemEntity::getStatus,true).list());
+    public Result win(@RequestParam(name = "projectKey") String projectKey , @RequestParam(name = "page") Integer page,@RequestParam(name = "limit") Integer limit){
+        Page<ProjectPrizeItemEntity> ipage = projectPrizeItemService.lambdaQuery()
+                .eq(ProjectPrizeItemEntity::getProjectKey,projectKey)
+                .eq(ProjectPrizeItemEntity::getStatus,true)
+                .page(new Page<ProjectPrizeItemEntity>(page,limit).setSearchCount(true));
+
+        Map<String,Object > result = new HashMap<>();
+        result.put("count",ipage.getTotal());
+        result.put("data",ipage.getRecords());
+        return Result.success(result);
     }
 
 
@@ -171,8 +182,16 @@ public class PrizeController {
     @Login
     @PostMapping("/prize/info")
     @ApiOperation("用户中奖情况")
-    public Result info(@RequestParam String fanbookid ){
-        return Result.success(projectPrizeItemService.lambdaQuery().eq(ProjectPrizeItemEntity::getFanbookid,fanbookid).eq(ProjectPrizeItemEntity::getStatus,true).list());
+    public Result info(@RequestParam(name = "fanbookid") String fanbookid  , @RequestParam(name = "page") Integer page,@RequestParam(name = "limit") Integer limit){
+        Page<ProjectPrizeItemEntity> ipage = projectPrizeItemService.lambdaQuery()
+                .eq(ProjectPrizeItemEntity::getFanbookid,fanbookid)
+                .eq(ProjectPrizeItemEntity::getStatus,true)
+                .page(new Page<ProjectPrizeItemEntity>(page,limit).setSearchCount(true));
+
+        Map<String,Object > result = new HashMap<>();
+        result.put("count",ipage.getTotal());
+        result.put("data",ipage.getRecords());
+        return Result.success(result);
     }
 
     @Login
