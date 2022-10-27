@@ -33,6 +33,7 @@ public enum ProjectItemTypeEnum {
     RATE("RATE", "评分", RateExpandStruct.class),
     COLOR("COLOR", "颜色", ColorExpandStruct.class),
     UPLOAD("UPLOAD", "文件上传组件", UploadExpandStruct.class),
+    IMAGE_UPLOAD("IMAGE_UPLOAD", "图片上传组件", UploadExpandStruct.class),
     IMAGE("IMAGE", "图片展示", ImageExpandStruct.class),
     IMAGE_SELECT("IMAGE_SELECT", "图片选择", ImageSelectExpandStruct.class),
     IMAGE_CAROUSEL("IMAGE_CAROUSEL", "图片轮播", ImageCarouselExpandStruct.class),
@@ -43,8 +44,9 @@ public enum ProjectItemTypeEnum {
     PROVINCE_CITY("PROVINCE_CITY", "省市联动", EmptyExpandStruct.class),
     PHONE_VERIFICATION("PHONE_VERIFICATION", "手机号验证", EmptyExpandStruct.class),
     INPUT_MAP("INPUT_MAP", "地理位置", EmptyExpandStruct.class),
-    MATRIX_SELECT("MATRIX_SELECT","矩阵选择",EmptyExpandStruct.class),
-    MATRIX_SCALE("MATRIX_SCALE","矩阵量表",EmptyExpandStruct.class);
+    MATRIX_SCALE("MATRIX_SCALE", "矩阵量表", MatrixscaleExpandStuct.class),
+    MATRIX_SELECT("MATRIX_SELECT", "矩阵选择", MatrixselectExpandStuct.class);
+
 
     @EnumValue
     @JsonValue
