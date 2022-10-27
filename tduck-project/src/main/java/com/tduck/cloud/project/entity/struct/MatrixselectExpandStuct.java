@@ -10,7 +10,7 @@ public class MatrixselectExpandStuct {
 
     public static class Table {
         public List<Option> rows;
-        public List<Option> cloums;
+        public List<Option> columns;
     }
 
     public static class Option {
