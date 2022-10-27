@@ -35,6 +35,12 @@ public class BaseExceptionHandler {
         return Result.failed(ResponseCodeConstants.UNAUTHORIZED, "登录状态过期");
     }
 
+    @ExceptionHandler(RoleException.class)
+    public Result handlerAuthorizationException(RoleException e) {
+        log.error(e.getMessage(), e);
+        return Result.failed(ResponseCodeConstants.NOT_ROLE, "权限不足");
+    }
+
 
     @ExceptionHandler(DuplicateKeyException.class)
     public Result handleDuplicateKeyException(DuplicateKeyException e) {

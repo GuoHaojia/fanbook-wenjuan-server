@@ -11,6 +11,7 @@ import com.tduck.cloud.account.util.JwtUtils;
 import com.tduck.cloud.account.vo.PermissionRoleVo;
 import com.tduck.cloud.api.annotation.Login;
 import com.tduck.cloud.api.exception.AuthorizationException;
+import com.tduck.cloud.api.exception.RoleException;
 import com.tduck.cloud.api.web.fb.service.OauthService;
 import io.jsonwebtoken.Claims;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -88,8 +89,6 @@ public class AuthorizationInterceptor extends HandlerInterceptorAdapter {
         ///检测用户操作权限
         List<PermissionEntity> permissionEntityList =  permissionService.selectListByUser(user);
 
-        Logger logger = Logger.getLogger("测试");
-        logger.info(permissionEntityList.toString());
 
         String requestUri = request.getRequestURI().replace(contextPath,"");
         Boolean checkPermission = true;
@@ -101,7 +100,7 @@ public class AuthorizationInterceptor extends HandlerInterceptorAdapter {
         }
 
         if(checkPermission){
-            throw new AuthorizationException("操作权限不够");
+            throw new RoleException("操作权限不够");
         }
         ///检测用户操作权限
 

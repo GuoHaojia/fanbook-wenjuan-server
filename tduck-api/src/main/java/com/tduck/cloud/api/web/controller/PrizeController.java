@@ -49,7 +49,7 @@ public class PrizeController {
     @Login
     @PostMapping("/prize/setting/query")
     @ApiOperation("查询问卷奖励设置")
-    public Result settingQuery(@RequestBody String projectKey){
+    public Result settingQuery(@RequestParam(value = "projectKey") String projectKey){
         List<ProjectPrizeSettingEntity> settingList = projectPrizeSettingService.lambdaQuery().eq(ProjectPrizeSettingEntity::getProjectKey,projectKey).list();
 
         if(settingList.size() > 0){

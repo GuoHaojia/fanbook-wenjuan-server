@@ -31,6 +31,11 @@ public interface ResponseCodeConstants {
     int NOT_FOUND = 404;
 
     /**
+     * 没有操作权限
+     */
+    int NOT_ROLE = 403;
+
+    /**
      * 非法签名
      */
     Integer SIGN_FAIL_CODE = 405;
