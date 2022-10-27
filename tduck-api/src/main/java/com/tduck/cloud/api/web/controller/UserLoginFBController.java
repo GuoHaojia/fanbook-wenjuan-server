@@ -131,7 +131,7 @@ public class UserLoginFBController {
         List<FbGuild> list = guilJson.getJSONArray("data").toJavaList(FbGuild.class);
         List<FbGuild> newList = new ArrayList<>();
         list.forEach(fbGuild -> {
-            if (fbGuild.getOwner().equals(user.getUser_id().toString())) {
+//            if (fbGuild.getOwner().equals(user.getUser_id().toString())) {
                 List<JSONObject> channels = fbGuild.getChannels();
                 List<JSONObject> channelJson = new ArrayList<>();
 
@@ -142,7 +142,7 @@ public class UserLoginFBController {
                 });
                 fbGuild.setChannels(channelJson);
                 newList.add(fbGuild);
-            }
+//            }
         });
 //        Iterator<FbGuild> iter = list.iterator();
 //        while (iter.hasNext()) {

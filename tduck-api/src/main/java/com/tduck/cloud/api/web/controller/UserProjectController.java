@@ -276,6 +276,9 @@ public class UserProjectController {
             return Result.failed("请先编辑在发布");
         }
         UserProjectEntity entity = projectService.getByKey(request.getKey());
+        if (entity.getStatus() == ProjectStatusEnum.RELEASE) {
+            return Result.failed("该问卷已发布");
+        }
         entity.setStatus(ProjectStatusEnum.RELEASE);
 
         Integer publishNum = entity.getPublishNum();
@@ -410,36 +413,44 @@ public class UserProjectController {
 //        Date parse = new SimpleDateFormat("yyyy-MM-dd HH:mm").parse(request.getPublishTime());
         Date parse = StrUtil.isNotBlank(request.getPublishTime()) ? new SimpleDateFormat("yyyy-MM-dd HH:mm").parse(request.getPublishTime()) : new Date(System.currentTimeMillis());
         Timer timer = new Timer();
-        timer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                if (request.getPublishList().size() > 0) {
-                    request.getPublishList().forEach(obj -> {
 
-                        if (!StringUtils.isEmpty(obj.getFbChannel())) {
-                            JSONObject jsonObject = new JSONObject();
-                            jsonObject.put("chat_id", obj.getFbChannel());
-                            Document doc = Jsoup.parse(entity.getDescribe());
-                            Elements links = doc.getElementsByTag("p");
-                            ValidatorUtils.validateEntity(links);
-                            JSONObject cardJson = FanbookCard.getWenJuanString(entity.getName(), links.get(0).text(), appUrl + "s/" + request.getKey());
-                            JSONObject taskJson = new JSONObject();
-                            taskJson.put("type", "task");
-                            taskJson.put("content", cardJson);
-                            jsonObject.put("text", taskJson.toString());
-                            jsonObject.put("parse_mode", "Fanbook");
+        if (request.getPublishList().size() > 0) {
+            request.getPublishList().forEach(obj -> {
+
+                if (!StringUtils.isEmpty(obj.getFbChannel())) {
+                    JSONObject jsonObject = new JSONObject();
+                    jsonObject.put("chat_id", obj.getFbChannel());
+                    Document doc = Jsoup.parse(entity.getDescribe());
+                    Elements links = doc.getElementsByTag("p");
+                    ValidatorUtils.validateEntity(links);
+                    JSONObject cardJson = FanbookCard.getWenJuanString(entity.getName(), links.get(0).text(), appUrl + "s/" + request.getKey());
+                    JSONObject taskJson = new JSONObject();
+                    taskJson.put("type", "task");
+                    taskJson.put("content", cardJson);
+                    jsonObject.put("text", taskJson.toString());
+                    jsonObject.put("parse_mode", "Fanbook");
+                    timer.schedule(new TimerTask() {
+                        @Override
+                        public void run() {
                             String rstr = fanbookService.sendMessage(jsonObject);
                             Boolean aBoolean=(Boolean)JSONObject.parseObject(rstr).get("ok");
-                            obj.setKey(request.getKey());
                             obj.setStatus(aBoolean ? 1 : 2);
-                            obj.setPublishTime(DateConvertUtils.dateToLocalDateTime(parse));
-                            userPublishService.save(obj);
+                            userPublishService.updateById(obj);
+                            if ((aBoolean ? 1 : 2) == 1) {
+                                entity.setPublishNum((int) redisUtils.incr(StrUtil.format(ProjectRedisKeyConstants.PROJECT_PUBLISH_NUMBER, entity.getKey()), CommonConstants.ConstantNumber.ONE));
+                                projectService.updateById(entity);
+                            }
                             log.debug("发送文件返回：" + rstr);
                         }
-                    });
+                    }, parse);
+
+                    obj.setKey(request.getKey());
+                    obj.setStatus(3);
+                    obj.setPublishTime(DateConvertUtils.dateToLocalDateTime(parse));
+                    userPublishService.save(obj);
                 }
-            }
-        }, parse);
+            });
+        }
         return Result.success();
     }
 
@@ -875,17 +886,44 @@ public class UserProjectController {
      */
     @Login
     @PostMapping("/user/project/recycle/delete")
-    public Result deleteRecycleProject(@RequestAttribute Long fbUser, @RequestBody UserProjectEntity projectEntity) {
-        boolean remove = projectService.remove(Wrappers.<UserProjectEntity>lambdaQuery().eq(UserProjectEntity::getFbUser, fbUser)
-                .eq(UserProjectEntity::getKey, projectEntity.getKey()));
-        if (remove) {
-            userProjectThemeService.remove(Wrappers.<UserProjectThemeEntity>lambdaQuery()
-                    .eq(UserProjectThemeEntity::getProjectKey, projectEntity.getKey()));
-            userProjectSettingService.remove(Wrappers.<UserProjectSettingEntity>lambdaQuery()
-                    .eq(UserProjectSettingEntity::getProjectKey, projectEntity.getKey()));
-        }
+    public Result deleteRecycleProject(@RequestBody UserProjectEntity projectEntity) {
+        boolean remove = projectService.remove(Wrappers.<UserProjectEntity>lambdaQuery().eq(UserProjectEntity::getFbUser, projectEntity.getFbUser())
+                .eq(ObjectUtil.isNotNull(projectEntity.getKey()), UserProjectEntity::getKey, projectEntity.getKey())
+                .eq(ObjectUtil.isNotNull(projectEntity.getDeleted()), UserProjectEntity::getDeleted, projectEntity.getDeleted()));
+
+        projectItemService.remove(Wrappers.<UserProjectItemEntity>lambdaQuery()
+                .eq(UserProjectItemEntity::getProjectKey, projectEntity.getKey()));
+        projectLogicService.remove(Wrappers.<UserProjectLogicEntity>lambdaQuery()
+                .eq(UserProjectLogicEntity::getProjectKey, projectEntity.getKey()));
+        userProjectThemeService.remove(Wrappers.<UserProjectThemeEntity>lambdaQuery()
+                .eq(UserProjectThemeEntity::getProjectKey, projectEntity.getKey()));
+        userProjectSettingService.remove(Wrappers.<UserProjectSettingEntity>lambdaQuery()
+                .eq(UserProjectSettingEntity::getProjectKey, projectEntity.getKey()));
+
         return Result.success(remove);
     }
+
+    /**
+     * 清空回收站
+     */
+    @Login
+    @PostMapping("/user/project/recycle/clear")
+    public Result clearRecycleProject(@RequestBody UserProjectEntity projectEntity) {
+
+        List<UserProjectEntity> list = projectService.list(Wrappers.<UserProjectEntity>lambdaQuery().eq(UserProjectEntity::getFbUser, projectEntity.getFbUser())
+                .eq(UserProjectEntity::getDeleted, projectEntity.getDeleted()));
+        List<String> keys = list.stream().map(UserProjectEntity::getKey).collect(Collectors.toList());
+
+        int key = projectService.getBaseMapper().delete(new QueryWrapper<UserProjectEntity>().in("key", keys));
+
+        projectItemService.getBaseMapper().delete(new QueryWrapper<UserProjectItemEntity>().in("project_Key", keys));
+        projectLogicService.getBaseMapper().delete(new QueryWrapper<UserProjectLogicEntity>().in("project_Key", keys));
+        userProjectThemeService.getBaseMapper().delete(new QueryWrapper<UserProjectThemeEntity>().in("project_Key", keys));
+        userProjectSettingService.getBaseMapper().delete(new QueryWrapper<UserProjectSettingEntity>().in("project_Key", keys));
+
+        return Result.success(key);
+    }
+
 
 
 }
