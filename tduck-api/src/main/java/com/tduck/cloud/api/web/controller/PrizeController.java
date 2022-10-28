@@ -19,10 +19,14 @@ import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.checkerframework.checker.units.qual.A;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -193,6 +197,28 @@ public class PrizeController {
         result.put("data",ipage.getRecords());
         return Result.success(result);
     }
+
+
+    @Login
+    @PostMapping("/prize/model")
+    @ApiOperation("中奖模板")
+    public void excelModel(HttpServletResponse httpServletResponse){
+
+        try {
+            httpServletResponse.reset();
+            httpServletResponse.addHeader("Content-Disposition", "attachment;fileName=" + URLEncoder.encode("导入模板.xlsx", "utf-8"));
+            httpServletResponse.setContentType("application/vnd.ms-excel;charset=utf-8");
+
+            ClassPathResource resource = new ClassPathResource("template/cdkmodel.xlsx");
+
+            XSSFWorkbook book = new XSSFWorkbook(resource.getInputStream());
+            book.write(httpServletResponse.getOutputStream());
+            httpServletResponse.getOutputStream().close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
 
     @Login
     @PostMapping("/prize/export")

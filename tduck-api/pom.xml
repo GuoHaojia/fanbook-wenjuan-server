@@ -116,6 +116,7 @@
                 <includes>
                     <include>**/*.yml</include>
                     <include>**/*.xml</include>
+                    <include>template/*.xlsx</include>
                 </includes>
                 <filtering>false</filtering>
             </resource>
