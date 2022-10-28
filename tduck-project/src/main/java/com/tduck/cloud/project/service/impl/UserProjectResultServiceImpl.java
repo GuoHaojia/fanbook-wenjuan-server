@@ -6,18 +6,19 @@ import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.*;
 import cn.hutool.http.HttpUtil;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.google.common.collect.Sets;
+import com.tduck.cloud.account.entity.UserEntity;
+import com.tduck.cloud.account.service.UserService;
 import com.tduck.cloud.common.constant.CommonConstants;
 import com.tduck.cloud.common.entity.BaseEntity;
 import com.tduck.cloud.common.exception.BaseException;
-import com.tduck.cloud.common.util.AddressUtils;
-import com.tduck.cloud.common.util.AsyncProcessUtils;
-import com.tduck.cloud.common.util.RedisUtils;
-import com.tduck.cloud.common.util.Result;
+import com.tduck.cloud.common.util.*;
 import com.tduck.cloud.project.entity.UserProjectItemEntity;
 import com.tduck.cloud.project.entity.UserProjectResultEntity;
 import com.tduck.cloud.project.entity.enums.ProjectItemTypeEnum;
@@ -26,6 +27,7 @@ import com.tduck.cloud.project.mapper.UserProjectResultMapper;
 import com.tduck.cloud.project.request.QueryProjectResultRequest;
 import com.tduck.cloud.project.service.UserProjectItemService;
 import com.tduck.cloud.project.service.UserProjectResultService;
+import com.tduck.cloud.project.vo.DxCountVo;
 import com.tduck.cloud.project.vo.ExportProjectResultVO;
 import com.tduck.cloud.storage.cloud.OssStorageFactory;
 import com.tduck.cloud.storage.util.StorageUtils;
@@ -53,6 +55,8 @@ public class UserProjectResultServiceImpl extends ServiceImpl<UserProjectResultM
 
     private final UserProjectItemService userProjectItemService;
     private final RedisUtils redisUtils;
+    private final UserService userService;
+    private final UserProjectItemService projectItemService;
 
     /**
      * 需要处理类型
@@ -62,12 +66,15 @@ public class UserProjectResultServiceImpl extends ServiceImpl<UserProjectResultM
 
 
     @Override
-    public void saveProjectResult(UserProjectResultEntity entity) {
+    public Boolean saveProjectResult(UserProjectResultEntity entity) {
         String projectKey = entity.getProjectKey();
         entity.setSerialNumber(redisUtils.incr(StrUtil.format(PROJECT_RESULT_NUMBER, projectKey), CommonConstants.ConstantNumber.ONE));
         entity.setSubmitAddress(AddressUtils.getRealAddressByIP(entity.getSubmitRequestIp()));
-        this.save(entity);
-
+        boolean save = this.save(entity);
+        if (save == false) {
+            redisUtils.decr(StrUtil.format(PROJECT_RESULT_NUMBER, projectKey), CommonConstants.ConstantNumber.ONE);
+        }
+        return save;
     }
 
     @Override
@@ -121,6 +128,7 @@ public class UserProjectResultServiceImpl extends ServiceImpl<UserProjectResultM
                         });
                 isFillRow.set(true);
             }
+            UserEntity user = userService.getOne(Wrappers.<UserEntity>lambdaQuery().eq(UserEntity::getFbUser, item.getFbUserid()));
             Iterator<String> iterator = processData.keySet().iterator();
             while (iterator.hasNext()) {
                 String key = iterator.next();
@@ -131,13 +139,18 @@ public class UserProjectResultServiceImpl extends ServiceImpl<UserProjectResultM
                     iterator.remove();
                 }
             }
+            processData.put(UserProjectResultEntity.Fields.fbUsername, item.getFbUsername());
+            processData.put(UserEntity.Fields.name, user.getName());
+            processData.put(UserEntity.Fields.phoneNumber, user.getPhoneNumber());
             processData.put(BaseEntity.Fields.createTime, item.getCreateTime());
-            processData.put(UserProjectResultEntity.Fields.submitAddress, item.getSubmitAddress());
+            processData.put(UserProjectResultEntity.Fields.completeTime, item.getCompleteTime());
             return processData;
         }).collect(Collectors.toList());
         List<ExportProjectResultVO.ExcelHeader> allHeaderList = new ArrayList<>();
         allHeaderList.addAll(ExportProjectResultVO.DEFAULT_HEADER_NAME);
         allHeaderList.addAll(titleList);
+        System.out.println(titleList);
+        System.out.println(resultList);
         return new ExportProjectResultVO(allHeaderList, resultList);
     }
 
@@ -200,5 +213,67 @@ public class UserProjectResultServiceImpl extends ServiceImpl<UserProjectResultM
             }
         });
         return Result.success(uuid);
+    }
+
+    @Override
+    public JSONArray queryProjectResultDate(String key) {
+        List<UserProjectItemEntity> itemEntityList = projectItemService.list(Wrappers.<UserProjectItemEntity>lambdaQuery()
+                .eq(UserProjectItemEntity::getProjectKey, key)
+                .orderByAsc(UserProjectItemEntity::getSort)
+        );
+        List tm = new ArrayList();
+        itemEntityList.forEach(item -> {
+            Map<String, Object> expand = item.getExpand();
+            String projectKey = item.getProjectKey();
+            Long id = item.getId();
+            String label = item.getLabel();
+            String type = item.getType().getValue();
+
+            //多选 单选 下拉 图片选择
+            if (type == "CHECKBOX" || type == "RADIO" || type == "SELECT" || type == "IMAGE_SELECT") {
+                List<Map<String, Object>> options = JSONArray.parseObject(JSON.toJSONString(expand.get("options")), List.class);
+                List ops = new ArrayList();
+                options.forEach(map -> {
+                    Object rs1 = this.getRedisIncr(type, projectKey, id, map.get("value"));
+                    DxCountVo.Option op = new DxCountVo.Option((String) map.get("label"), ObjectUtil.isNotNull(rs1) ? rs1 : 0);
+                    ops.add(op);
+                });
+                Object rs2 = this.getRedisIncr(type, projectKey, id, null);
+                DxCountVo dx = new DxCountVo(label + "/" + type + "/" + id, ops, ObjectUtil.isNotNull(rs2) ? rs2 : 0);
+                tm.add(dx);
+            }
+            //评分
+            if (type == "RATE") {
+                Integer max = (Integer) expand.get("max");
+                List ops = new ArrayList();
+                for (int i=1; i<=max; i++) {
+                    Object rs1 = this.getRedisIncr(type, projectKey, id, i);
+                    DxCountVo.Option op = new DxCountVo.Option(i+"星", ObjectUtil.isNotNull(rs1) ? rs1 : 0);
+                    ops.add(op);
+                }
+                Object rs2 = this.getRedisIncr(type, projectKey, id, null);
+                DxCountVo dx = new DxCountVo(label + "/" + type + "/" + id, ops, ObjectUtil.isNotNull(rs2) ? rs2 : 0);
+                tm.add(dx);
+            }
+            //单行文本 多行文本 日期 时间 省市区 评分 上传图片 上传文件
+            if (type == "INPUT" || type == "TEXTAREA" ||type == "DATE" || type == "TIME" || type == "PROVINCE_CITY" || type == "IMAGE_UPLOAD" || type == "UPLOAD") {
+                Object rs2 = this.getRedisIncr(type, projectKey, id, null);
+                DxCountVo dx = new DxCountVo(label + "/" + type + "/" + id, null, ObjectUtil.isNotNull(rs2) ? rs2 : 0);
+                tm.add(dx);
+            }
+        });
+        //矩阵量表
+
+        //矩阵选择
+
+        return JSONArray.parseArray(JSON.toJSONString(tm));
+    }
+
+    public Object getRedisIncr(String type, String projectKey, Long id, Object v){
+
+        if (ObjectUtil.isNull(v)) {
+            return redisUtils.get(StrUtil.format("PROJECT_RESULT_"+type+":{}", projectKey+"/"+id));
+        }
+        return redisUtils.get(StrUtil.format("PROJECT_RESULT_"+type+":{}", projectKey+"/"+id+"/"+v));
     }
 }

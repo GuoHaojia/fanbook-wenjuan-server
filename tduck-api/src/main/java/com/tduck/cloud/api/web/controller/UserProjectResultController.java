@@ -4,38 +4,43 @@ import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.poi.excel.ExcelUtil;
 import cn.hutool.poi.excel.ExcelWriter;
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.tduck.cloud.account.entity.UserEntity;
 import com.tduck.cloud.account.service.UserService;
 import com.tduck.cloud.account.vo.UserRoleVo;
 import com.tduck.cloud.api.annotation.Login;
 import com.tduck.cloud.api.annotation.NoRepeatSubmit;
 import com.tduck.cloud.api.util.HttpUtils;
+import com.tduck.cloud.api.util.QueueUtils;
 import com.tduck.cloud.api.web.fb.service.OauthService;
 import com.tduck.cloud.common.constant.CommonConstants;
 import com.tduck.cloud.common.email.MailService;
+import com.tduck.cloud.common.exception.BaseException;
 import com.tduck.cloud.common.util.RedisUtils;
 import com.tduck.cloud.common.util.Result;
 import com.tduck.cloud.common.validator.ValidatorUtils;
+import com.tduck.cloud.project.constant.ProjectRedisKeyConstants;
 import com.tduck.cloud.project.entity.*;
 import com.tduck.cloud.project.entity.enums.ProjectLogicExpressionEnum;
+import com.tduck.cloud.project.entity.struct.RadioExpandStruct;
 import com.tduck.cloud.project.request.QueryProjectResultRequest;
 import com.tduck.cloud.project.service.*;
+import com.tduck.cloud.project.vo.DxCountVo;
 import com.tduck.cloud.project.vo.ExportProjectResultVO;
 import com.tduck.cloud.wx.mp.service.WxMpUserMsgService;
 import lombok.Data;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.ibatis.mapping.Environment;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
@@ -43,16 +48,12 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Logger;
+import java.util.*;
+import java.util.concurrent.LinkedBlockingQueue;
 
-import static com.tduck.cloud.project.constant.ProjectRedisKeyConstants.PROJECT_RESULT_NUMBER;
-import static com.tduck.cloud.project.constant.ProjectRedisKeyConstants.PROJECT_VIEW_IP_LIST;
+import static com.tduck.cloud.project.constant.ProjectRedisKeyConstants.*;
 
 /**
  * @author : smalljop
@@ -73,15 +74,15 @@ public class UserProjectResultController {
     private final MailService mailService;
     private final WxMpUserMsgService userMsgService;
     private final RedisUtils redisUtils;
-
-
+    private final UserProjectItemService projectItemService;
+    private final UserPublishService userPublishService;
     private final UserProjectLogicService projectLogicService;
     private final UserService userService;
-
     private final ProjectPrizeSettingService projectPrizeSettingService;
     private final ProjectPrizeService projectPrizeService;
     private final ProjectPrizeItemService projectPrizeItemService;
     private final OauthService oauthService;
+    private final LinkedBlockingQueue<UserProjectResultEntity> queue = new LinkedBlockingQueue<>();
 
     @Value("${devdebug}")
     private boolean debug;
@@ -97,6 +98,7 @@ public class UserProjectResultController {
         Integer count = Convert.toInt(redisUtils.hmGet(StrUtil.format(PROJECT_VIEW_IP_LIST, projectKey), ip), CommonConstants.ConstantNumber.ZERO);
         redisUtils.hmSet(StrUtil.format(PROJECT_VIEW_IP_LIST, projectKey), ip, count + CommonConstants.ConstantNumber.ONE);
         return Result.success();
+
     }
 
     /**
@@ -109,7 +111,6 @@ public class UserProjectResultController {
     @NoRepeatSubmit
     @PostMapping("/create")
     public Result createProjectResult(@RequestBody UserProjectResultEntity entity, HttpServletRequest request) {
-
 //        AtomicInteger count = new AtomicInteger();
 
         //本地测试
@@ -129,12 +130,17 @@ public class UserProjectResultController {
             return Result.failed(userProjectSettingStatus.getMsg());
         }
 
-        projectResultService.saveProjectResult(entity);
+        Boolean save = projectResultService.saveProjectResult(entity);
 
-        UserProjectEntity one = projectService.getOne(Wrappers.<UserProjectEntity>lambdaQuery().eq(UserProjectEntity::getKey, entity.getProjectKey()));
-//        one.setAnswerNum(count.incrementAndGet());
-        one.setAnswerNum((Integer) redisUtils.get(StrUtil.format(PROJECT_RESULT_NUMBER, entity.getProjectKey())));
-        projectService.updateById(one);
+        if (BooleanUtil.isTrue(save)) {
+            queue.offer(entity);
+            UserProjectResultEntity poll = queue.poll();
+
+            //答卷数量
+            this.setResultNum(poll);
+            //答卷统计
+            this.calculateProjectResult(poll);
+        }
 
         ///fbuserid 转uid
         QueryWrapper<UserEntity> queryWrapper = new QueryWrapper<>();
@@ -343,7 +349,7 @@ public class UserProjectResultController {
         //设置下载的文件名
 //        response.setContentType("application/vnd.ms-excel;charset=utf-8");
         //test.xls是弹出下载对话框的文件名，不能为中文，中文请自行编码
-        response.setHeader("Content-Disposition", "attachment;filename=test.xls");
+        response.setHeader("Content-Disposition", "attachment;fileName=" + URLEncoder.encode("答卷数据.xls", "utf-8"));
         ServletOutputStream out = response.getOutputStream();
         writer.flush(out, true);
         // 关闭writer，释放内存
@@ -364,7 +370,6 @@ public class UserProjectResultController {
         return projectResultService.downloadProjectResultFile(request);
     }
 
-
     /**
      * 结果分页
      *
@@ -376,7 +381,6 @@ public class UserProjectResultController {
     public Result queryProjectResults(QueryProjectResultRequest request) {
         return Result.success(projectResultService.listByQueryConditions(request));
     }
-
 
     /**
      * 查询公开结果
@@ -391,6 +395,19 @@ public class UserProjectResultController {
             return Result.success();
         }
         return Result.success(projectResultService.listByQueryConditions(request));
+    }
+
+    /**
+     * 填写结果数据
+     *
+     * @param key
+     * @return
+     */
+    @Login
+    @GetMapping("/data")
+    public Result queryProjectResultDate(@RequestParam("key") String key) {
+
+        return Result.success(projectResultService.queryProjectResultDate(key));
     }
 
     private void sendWriteResultNotify(UserProjectSettingEntity settingEntity, UserProjectResultEntity entity) {
@@ -408,6 +425,83 @@ public class UserProjectResultController {
             openIdList.stream().forEach(openId -> {
                 userMsgService.sendKfTextMsg("", openId, "收到新的反馈，请去Pc端查看");
             });
+        }
+    }
+
+    //答题数
+    public void setResultNum(UserProjectResultEntity entity) {
+        //总答题数
+        UserProjectEntity one = projectService.getOne(Wrappers.<UserProjectEntity>lambdaQuery().eq(UserProjectEntity::getKey, entity.getProjectKey()));
+//        one.setAnswerNum(count.incrementAndGet());
+        one.setAnswerNum((redisUtils.get(StrUtil.format(ProjectRedisKeyConstants.PROJECT_RESULT_NUMBER, entity.getProjectKey()), Integer.class)));
+        projectService.updateById(one);
+        //各推送答卷答题数
+        PublishEntity ps= userPublishService.getOne(Wrappers.<PublishEntity>lambdaQuery().eq(PublishEntity::getKey, entity.getProjectKey()).eq(PublishEntity::getGuildId, entity.getGuildId()).eq(PublishEntity::getFbChannel, entity.getChatId()).eq(PublishEntity::getPublishTime, entity.getPublishTime()));
+        if (ObjectUtil.isNull(ps)) {
+            throw new BaseException("问卷推送时间错误");
+        }
+        ps.setAnswerNum((int) redisUtils.incr(StrUtil.format(ProjectRedisKeyConstants.PROJECT_RESULT_NUMBER, ps.getId()), CommonConstants.ConstantNumber.ONE));
+    }
+
+    //答卷数据统计
+    public void calculateProjectResult(UserProjectResultEntity entity) {
+//        UserProjectResultEntity entity = queue.poll();
+        if (ObjectUtil.isNotNull(entity)) {
+            //数据
+            List<UserProjectItemEntity> itemEntityList = projectItemService.list(Wrappers.<UserProjectItemEntity>lambdaQuery()
+                    .eq(UserProjectItemEntity::getProjectKey, entity.getProjectKey())
+                    .orderByAsc(UserProjectItemEntity::getSort)
+            );
+
+            Map<String, Object> originalData = entity.getOriginalData();
+            System.out.println(originalData);
+            if (ObjectUtil.isNull(originalData)) {
+                throw  new BaseException("请填写问卷");
+            }
+            //防止答题后表单变化，对比答题数据和表单项（bug:答卷推送后，表单还能编辑，formid不唯一）
+            for (Map.Entry<String, Object> entry : originalData.entrySet()) {
+                String key = entry.getKey();
+                Object value = entry.getValue();
+
+                itemEntityList.forEach(item -> {
+                    if (key.substring(5,8).equals(String.valueOf(item.getFormItemId())) && ObjectUtil.isNotNull(value)) {
+                        String type = item.getType().getValue();
+                        //题目计数
+                        redisUtils.incr(StrUtil.format("PROJECT_RESULT_"+type+":{}", item.getProjectKey()+"/"+item.getId()), CommonConstants.ConstantNumber.ONE);
+                        //多选 单选 下拉 图片选择 评分
+                        if (type == "CHECKBOX" || type == "RADIO" || type == "SELECT" || type == "IMAGE_SELECT" ||type == "RATE") {
+                            //选项计数
+                            this.redisIncr(value, item, type);
+                        }
+                        //矩阵量表
+                        if (item.getType().equals("MATRIX_SCALE")) {
+                            this.redisIncr(value, item, "TEXTAREA");
+                        }
+                        //矩阵选择
+                        if (item.getType().equals("MATRIX_SELECT")) {
+                            this.redisIncr(value, item, "TEXTAREA");
+                        }
+                    }
+                });
+            }
+        }
+    }
+
+    /**
+     * 选项计数
+     */
+    public void redisIncr(Object value, UserProjectItemEntity item, String type) {
+        //排除答题单、双选设置
+        if (value instanceof List) {
+            List jsonObject = JSONArray.parseObject(JSON.toJSONString(value), List.class);
+            System.out.println(jsonObject);
+            jsonObject.forEach(index -> {
+                System.out.println(index);
+                //(index)排除选项同名bug
+                redisUtils.incr(StrUtil.format("PROJECT_RESULT_"+type+":{}", item.getProjectKey()+"/"+item.getId()+"/"+index), CommonConstants.ConstantNumber.ONE);
+            });
+        } else {
+            redisUtils.incr(StrUtil.format("PROJECT_RESULT_"+type+":{}", item.getProjectKey()+"/"+item.getId()+"/"+value), CommonConstants.ConstantNumber.ONE);
         }
     }
 

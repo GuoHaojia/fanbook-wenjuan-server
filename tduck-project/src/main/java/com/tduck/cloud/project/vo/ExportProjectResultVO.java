@@ -2,6 +2,7 @@ package com.tduck.cloud.project.vo;
 
 import com.google.common.collect.Lists;
 import com.tduck.cloud.common.entity.BaseEntity;
+import com.tduck.cloud.account.entity.UserEntity;
 import com.tduck.cloud.project.entity.UserProjectResultEntity;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -30,12 +31,24 @@ public class ExportProjectResultVO {
      */
     public final static List<ExcelHeader> DEFAULT_HEADER_NAME = Lists.newArrayList(
             new ExcelHeader() {{
+                setFieldKey(UserProjectResultEntity.Fields.fbUsername);
+                setTitle("fanbookid");
+            }},
+            new ExcelHeader() {{
+                setFieldKey(UserEntity.Fields.name);
+                setTitle("fanbook昵称");
+            }},
+            new ExcelHeader() {{
+                setFieldKey(UserEntity.Fields.phoneNumber);
+                setTitle("手机号");
+            }},
+            new ExcelHeader() {{
                 setFieldKey(BaseEntity.Fields.createTime);
                 setTitle("提交时间");
             }},
             new ExcelHeader() {{
-                setFieldKey(UserProjectResultEntity.Fields.submitAddress);
-                setTitle("提交地址");
+                setFieldKey(UserProjectResultEntity.Fields.completeTime);
+                setTitle("答题耗时");
             }});
 
     /**

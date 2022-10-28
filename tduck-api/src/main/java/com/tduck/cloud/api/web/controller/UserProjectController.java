@@ -414,7 +414,8 @@ public class UserProjectController {
         UserProjectEntity entity = projectService.getByKey(request.getKey());
 
 //        Date parse = new SimpleDateFormat("yyyy-MM-dd HH:mm").parse(request.getPublishTime());
-        Date parse = StrUtil.isNotBlank(request.getPublishTime()) ? new SimpleDateFormat("yyyy-MM-dd HH:mm").parse(request.getPublishTime()) : new Date(System.currentTimeMillis());
+        String ds = StrUtil.isNotBlank(request.getPublishTime()) ? request.getPublishTime() : new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
+        Date parse = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(ds);
         Timer timer = new Timer();
 
         if (request.getPublishList().size() > 0) {
@@ -423,10 +424,11 @@ public class UserProjectController {
                 if (!StringUtils.isEmpty(obj.getFbChannel())) {
                     JSONObject jsonObject = new JSONObject();
                     jsonObject.put("chat_id", obj.getFbChannel());
+//                    jsonObject.put("publish_time", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(parse));
                     Document doc = Jsoup.parse(entity.getDescribe());
                     Elements links = doc.getElementsByTag("p");
                     ValidatorUtils.validateEntity(links);
-                    JSONObject cardJson = FanbookCard.getWenJuanString(entity.getName(), links.get(0).text(), appUrl + "s/" + request.getKey());
+                    JSONObject cardJson = FanbookCard.getWenJuanString(entity.getName(), links.get(0).text(), appUrl + "s/" + request.getKey() + "?publishTime=" + ds + "&chatId=" + obj.getFbChannel());
                     JSONObject taskJson = new JSONObject();
                     taskJson.put("type", "task");
                     taskJson.put("content", cardJson);
@@ -445,7 +447,7 @@ public class UserProjectController {
 
                     obj.setKey(request.getKey());
                     obj.setStatus(3);
-                    obj.setPublishTime(DateConvertUtils.dateToLocalDateTime(parse));
+                    obj.setPublishTime(ds);
                     userPublishService.save(obj);
                 }
             });
