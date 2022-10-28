@@ -21,6 +21,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.checkerframework.checker.units.qual.A;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
@@ -113,7 +114,7 @@ public class PrizeController {
     @Login
     @PostMapping("/prize/cdk/import")
     @ApiOperation("添加cdk奖励")
-    public Result cdkSave(@RequestParam(name = "projectKey") String projectKey, @RequestParam(name = "desc") String desc, InputStream inputStream){
+    public Result cdkSave(@RequestParam(name = "projectKey") String projectKey, @RequestParam(name = "desc") String desc, @RequestParam("file") MultipartFile file){
         ProjectPrizeEntity projectPrizeEntity = ProjectPrizeEntity.builder().projectKey(projectKey).build();
         projectPrizeEntity.setDesc(desc);
         projectPrizeEntity.setStatus(true);
@@ -121,7 +122,7 @@ public class PrizeController {
 
         ///解析cdk
         try {
-            XSSFWorkbook book = new XSSFWorkbook(inputStream);
+            XSSFWorkbook book = new XSSFWorkbook(file.getInputStream());
             XSSFSheet sheet = book.getSheetAt(0);
             int cols;
             List<ProjectPrizeItemEntity> list = new ArrayList<ProjectPrizeItemEntity>();

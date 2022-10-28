@@ -20,7 +20,6 @@ import com.tduck.cloud.account.vo.UserRoleVo;
 import com.tduck.cloud.api.annotation.Login;
 import com.tduck.cloud.api.annotation.NoRepeatSubmit;
 import com.tduck.cloud.api.util.HttpUtils;
-import com.tduck.cloud.api.util.QueueUtils;
 import com.tduck.cloud.api.web.fb.service.OauthService;
 import com.tduck.cloud.common.constant.CommonConstants;
 import com.tduck.cloud.common.email.MailService;
