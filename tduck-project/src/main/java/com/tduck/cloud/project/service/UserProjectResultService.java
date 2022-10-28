@@ -1,5 +1,6 @@
 package com.tduck.cloud.project.service;
 
+import com.alibaba.fastjson.JSONArray;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.tduck.cloud.common.util.Result;
@@ -20,8 +21,9 @@ public interface UserProjectResultService extends IService<UserProjectResultEnti
      * 保存结果
      *
      * @param entity
+     * @return
      */
-    void saveProjectResult(UserProjectResultEntity entity);
+    Boolean saveProjectResult(UserProjectResultEntity entity);
 
     /**
      * 根据查询参数
@@ -47,4 +49,12 @@ public interface UserProjectResultService extends IService<UserProjectResultEnti
      * @return
      */
     Result downloadProjectResultFile(QueryProjectResultRequest request);
+
+    /**
+     * 结果统计查询
+     *
+     * @param key
+     * @return
+     */
+    JSONArray queryProjectResultDate(String key);
 }

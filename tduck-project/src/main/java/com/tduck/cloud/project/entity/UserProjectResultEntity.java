@@ -1,16 +1,20 @@
 package com.tduck.cloud.project.entity;
 
+import cn.hutool.core.date.DatePattern;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.tduck.cloud.common.entity.BaseEntity;
 import com.tduck.cloud.common.mybatis.handler.JacksonTypeHandler;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.experimental.FieldNameConstants;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import javax.validation.constraints.NotBlank;
+import java.time.LocalDateTime;
 import java.util.Map;
 
 /**
@@ -104,6 +108,7 @@ public class UserProjectResultEntity extends BaseEntity<UserProjectResultEntity>
     /**
      * FB用户短ID
      */
+    @TableField(exist = false)
     private String fbNickname;
     /**
      * FB服务器ID
@@ -120,4 +125,10 @@ public class UserProjectResultEntity extends BaseEntity<UserProjectResultEntity>
      */
     @TableField(typeHandler = JacksonTypeHandler.class)
     private Map<String, Object> wxUserInfo;
+
+    private String publishTime;
+
+    private String chatId;
+
+
 }

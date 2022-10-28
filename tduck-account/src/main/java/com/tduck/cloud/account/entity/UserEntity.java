@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.FieldNameConstants;
 
 import java.time.LocalDateTime;
 
@@ -20,6 +21,7 @@ import java.time.LocalDateTime;
 @Data
 @TableName("ac_user")
 @Builder
+@FieldNameConstants
 @AllArgsConstructor
 @NoArgsConstructor
 public class UserEntity extends BaseEntity<UserEntity> {

@@ -14,6 +14,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
 
@@ -39,7 +40,7 @@ public class PublishEntity extends BaseEntity<PublishEntity> {
     @JsonProperty(value = "status")
     Integer status;
     @TableField("`publish_time`")
-    LocalDateTime publishTime;
+    String publishTime;
     @TableField("`answer_num`")
     Integer answerNum;
 
