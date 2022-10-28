@@ -92,4 +92,5 @@ fb:
       appsecret: j6iu8fi6zxasvrtwhdr5
       getuserscore: /api/core/open/getUserPoint
       modifyuserpoint: /api/core/open/modifyUserPoint
+      access_token: 93d4029fc9e80eb3b3415c560419f6f0fb0506ba320bdec5f5aa96980fd7d9b7bb2b697976ba3197fc659424a765f961
 

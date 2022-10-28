@@ -186,6 +186,31 @@ public class OauthService {
         }
     }
 
+    public Boolean setMemberRoles(String access_token,Long guildId, Long user_id,Long roles){
+        List roleList = new ArrayList();
+        roleList.add(roles);
+        JSONObject data = new JSONObject();
+        data.put("guild_id",guildId);
+        data.put("user_id",user_id);
+        data.put("roles",roleList);
+
+        String rJson = OkHttpUtils
+                .builder().url(robothost + "/" + access_token + "/setMemberRoles")
+                .addHeader("content-type", "application/json")
+                .addHeader("authorization", "Bearer " + access_token)
+                .post(data.toJSONString())
+                .sync();
+
+        if (null != rJson) {
+
+
+            Boolean userJson = (Boolean)JSONObject.parseObject(rJson).get("result");
+            return userJson;
+        } else {
+            return false;
+        }
+    }
+
     public String existsMember(String access_token , String guild_id, String member_id){
         String rJson = OkHttpUtils
                 .builder().url(robothost + "/" + access_token + "/guild/existsMember")
@@ -271,7 +296,7 @@ public class OauthService {
 
     private String getSign(Map<String, String> signmap) {
         try {
-            log.info(appsecret + "&" + generateParams(signmap, "") + "&" + appsecret);
+            //log.info(appsecret + "&" + generateParams(signmap, "") + "&" + appsecret);
             //测试
             return signEncode(appsecret + "&" + generateParams(signmap, "") + "&" + appsecret);
         } catch (UnsupportedEncodingException e) {

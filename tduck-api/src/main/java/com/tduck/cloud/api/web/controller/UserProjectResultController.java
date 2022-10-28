@@ -51,6 +51,7 @@ import java.net.URLEncoder;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.logging.Logger;
 
 import static com.tduck.cloud.project.constant.ProjectRedisKeyConstants.*;
 
@@ -86,6 +87,9 @@ public class UserProjectResultController {
     @Value("${devdebug}")
     private boolean debug;
 
+    @Value("${fb.open.api.access_token}")
+    private String access_token;
+
     /***
      * 查看项目
      *  记录查看的IP 统计查看用户数
@@ -113,12 +117,12 @@ public class UserProjectResultController {
 //        AtomicInteger count = new AtomicInteger();
 
         //本地测试
-        //if(debug){
-        //    entity.setFbUserid("416120040304148480");
-        //    entity.setFbUsername("3904464");
-        //    entity.setGuildId("420861300550139904");
-        //    entity.setGuildName("测试服务");
-        //}
+        /*if(debug){
+            entity.setFbUserid("416120040304148480");
+            entity.setFbUsername("3904464");
+            entity.setGuildId("420861300550139904");
+            entity.setGuildName("测试服务");
+        }*/
 
         ValidatorUtils.validateEntity(entity);
         entity.setSubmitRequestIp(HttpUtils.getIpAddr(request));
@@ -184,13 +188,10 @@ public class UserProjectResultController {
             //构建角色 赋予用户  或者不走逻辑判断
             if(flag == 2 || logic.getRoleType() == false){
 
-                UserRoleVo userRoleVo = new UserRoleVo();
-                userRoleVo.setUserid(userEntity.getId());
-                userRoleVo.setRoleid(logic.getFormItemId());
-                userRoleVo.setRolestatus(1);
-
-                userService.updateUserBelong(userRoleVo);
+                //分配角色
+                oauthService.setMemberRoles(access_token,Long.valueOf(entity.getGuildId()),Long.valueOf(entity.getFbUserid()),logic.getFormItemId());
             }
+
         }
         //分配角色内容 end
 
