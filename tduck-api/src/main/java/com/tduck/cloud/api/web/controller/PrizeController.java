@@ -144,6 +144,9 @@ public class PrizeController {
                         .build();
                 list.add(prizeItem);
             }
+            if (list.size() == 0){
+                return Result.failed("excel无可选cdk");
+            }
 
             projectPrizeService.getBaseMapper().insert(projectPrizeEntity);
             list.forEach(item->item.setPrizeid(projectPrizeEntity.getId()));
@@ -151,8 +154,8 @@ public class PrizeController {
             return Result.success(projectPrizeItemService.saveBatch(list));
         } catch (Exception e) {
             e.printStackTrace();
+            return Result.failed("excel文件上传失败");
         }
-        return Result.success();
     }
 
 
@@ -206,6 +209,7 @@ public class PrizeController {
 
         try {
             httpServletResponse.reset();
+            httpServletResponse.addHeader("Access-Control-Allow-Origin","*");
             httpServletResponse.addHeader("Content-Disposition", "attachment;fileName=" + URLEncoder.encode("导入模板.xlsx", "utf-8"));
             httpServletResponse.setContentType("application/vnd.ms-excel;charset=utf-8");
 
@@ -228,6 +232,7 @@ public class PrizeController {
 
         try {
             httpServletResponse.setContentType("application/vnd.ms-excel");
+            httpServletResponse.addHeader("Access-Control-Allow-Origin","*");
             httpServletResponse.addHeader("Content-Disposition", "attachment;fileName=" + URLEncoder.encode("中奖名单.xls", "utf-8"));
 
             ServletOutputStream outputStream = httpServletResponse.getOutputStream();
