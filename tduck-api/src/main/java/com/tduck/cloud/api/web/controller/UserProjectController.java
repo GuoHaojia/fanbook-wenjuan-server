@@ -1,23 +1,18 @@
 package com.tduck.cloud.api.web.controller;
-
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.Sets;
 import com.tduck.cloud.account.entity.UserEntity;
 import com.tduck.cloud.account.service.UserService;
 import com.tduck.cloud.api.annotation.Login;
-import com.tduck.cloud.api.util.DateConvertUtils;
 import com.tduck.cloud.api.util.HttpUtils;
 import com.tduck.cloud.api.web.fb.service.OauthService;
 import com.tduck.cloud.common.constant.CommonConstants;
@@ -49,7 +44,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.chanjar.weixin.common.error.WxErrorException;
 import me.chanjar.weixin.mp.api.WxMpService;
-import me.chanjar.weixin.mp.bean.result.WxMpQrCodeTicket;
+
+import org.checkerframework.checker.units.qual.Current;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
@@ -60,10 +56,11 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotBlank;
 import java.text.SimpleDateFormat;
-import java.time.LocalDate;
+
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -96,6 +93,9 @@ public class UserProjectController {
     private final ProjectPrizeService projectPrizeService;
     private final ProjectPrizeItemService projectPrizeItemService;
     private final OauthService oauthService;
+
+    public static ConcurrentHashMap<String, TimerTask> taskMap = new ConcurrentHashMap();
+    private static final String taskPrefix = "TimingPublish-Task";
 
 
     @Value("${fb.open.redirect_uri}")
@@ -422,6 +422,11 @@ public class UserProjectController {
             request.getPublishList().forEach(obj -> {
 
                 if (!StringUtils.isEmpty(obj.getFbChannel())) {
+                    obj.setKey(request.getKey());
+                    obj.setStatus(3);
+                    obj.setPublishTime(ds);
+                    userPublishService.save(obj);
+
                     JSONObject jsonObject = new JSONObject();
                     jsonObject.put("chat_id", obj.getFbChannel());
 //                    jsonObject.put("publish_time", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(parse));
@@ -434,25 +439,59 @@ public class UserProjectController {
                     taskJson.put("content", cardJson);
                     jsonObject.put("text", taskJson.toString());
                     jsonObject.put("parse_mode", "Fanbook");
-                    timer.schedule(new TimerTask() {
+
+                    String taskName = taskPrefix + obj.getId();
+                    System.out.println(taskName);
+
+                    TimerTask task = new TimerTask() {
                         @Override
                         public void run() {
                             String rstr = fanbookService.sendMessage(jsonObject);
-                            Boolean aBoolean=(Boolean)JSONObject.parseObject(rstr).get("ok");
+                            Boolean aBoolean = (Boolean) JSONObject.parseObject(rstr).get("ok");
                             obj.setStatus(aBoolean ? 1 : 2);
                             userPublishService.updateById(obj);
                             log.debug("发送文件返回：" + rstr);
+                            taskMap.remove(taskName);
+                            System.out.println(taskMap.getClass());
+                            System.out.println(taskMap);
                         }
-                    }, parse);
+                    };
+                    timer.schedule(task, parse);
 
-                    obj.setKey(request.getKey());
-                    obj.setStatus(3);
-                    obj.setPublishTime(ds);
-                    userPublishService.save(obj);
+                    if (obj.getStatus() == 3) {
+                        taskMap.put(taskName, task);
+                        System.out.println(taskMap.getClass());
+                        System.out.println(taskMap);
+                    }
                 }
             });
         }
         return Result.success();
+    }
+
+    /**
+     * 取消推送消息(定时)
+     */
+    @GetMapping("/user/project/cancelTimingPublish")
+    public Result timingPublishMsg(@RequestParam("id") Integer id) throws Exception{
+
+        String taskName = taskPrefix + id;
+        System.out.println(taskMap);
+        if (taskMap.containsKey(taskName)){
+            TimerTask timerTask = taskMap.get(taskName);
+            System.out.println(timerTask);
+            boolean cancel = timerTask.cancel();
+            if (cancel == true) {
+                taskMap.remove(taskName);
+                System.out.println(taskMap);
+                PublishEntity pb = userPublishService.getOne(Wrappers.<PublishEntity>lambdaQuery().eq(PublishEntity::getId, id));
+                pb.setStatus(4);
+                pb.updateById();
+                return Result.success("取消成功");
+            }
+            return Result.failed("取消失败，请重试");
+        }
+        return Result.failed("队列中无此任务");
     }
 
     /**
