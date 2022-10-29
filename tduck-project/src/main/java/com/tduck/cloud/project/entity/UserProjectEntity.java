@@ -111,4 +111,16 @@ public class UserProjectEntity extends BaseEntity<UserProjectEntity> {
 
     @TableField(exist = false)
     String publishTime;
+
+    @TableField(value = "project_share_img")
+    private String projectShareImg;
+
+    @TableField(value = "main_text")
+    private String mainText;
+
+    @TableField(value = "description")
+    private String description;
+
+    @TableField(value = "links")
+    private String links;
 }

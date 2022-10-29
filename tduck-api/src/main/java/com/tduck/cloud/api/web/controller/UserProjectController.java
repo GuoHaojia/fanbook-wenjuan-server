@@ -94,7 +94,7 @@ public class UserProjectController {
     private final ProjectPrizeItemService projectPrizeItemService;
     private final OauthService oauthService;
 
-    public static ConcurrentHashMap<String, TimerTask> taskMap = new ConcurrentHashMap();
+    private static ConcurrentHashMap<String, TimerTask> taskMap = new ConcurrentHashMap();
     private static final String taskPrefix = "TimingPublish-Task";
 
 
@@ -441,8 +441,6 @@ public class UserProjectController {
                     jsonObject.put("parse_mode", "Fanbook");
 
                     String taskName = taskPrefix + obj.getId();
-                    System.out.println(taskName);
-
                     TimerTask task = new TimerTask() {
                         @Override
                         public void run() {
@@ -452,16 +450,12 @@ public class UserProjectController {
                             userPublishService.updateById(obj);
                             log.debug("发送文件返回：" + rstr);
                             taskMap.remove(taskName);
-                            System.out.println(taskMap.getClass());
-                            System.out.println(taskMap);
                         }
                     };
                     timer.schedule(task, parse);
 
                     if (obj.getStatus() == 3) {
                         taskMap.put(taskName, task);
-                        System.out.println(taskMap.getClass());
-                        System.out.println(taskMap);
                     }
                 }
             });
@@ -476,14 +470,11 @@ public class UserProjectController {
     public Result timingPublishMsg(@RequestParam("id") Integer id) throws Exception{
 
         String taskName = taskPrefix + id;
-        System.out.println(taskMap);
         if (taskMap.containsKey(taskName)){
             TimerTask timerTask = taskMap.get(taskName);
-            System.out.println(timerTask);
             boolean cancel = timerTask.cancel();
             if (cancel == true) {
                 taskMap.remove(taskName);
-                System.out.println(taskMap);
                 PublishEntity pb = userPublishService.getOne(Wrappers.<PublishEntity>lambdaQuery().eq(PublishEntity::getId, id));
                 pb.setStatus(4);
                 pb.updateById();

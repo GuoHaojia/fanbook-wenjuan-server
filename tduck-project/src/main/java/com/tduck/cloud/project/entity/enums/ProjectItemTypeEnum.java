@@ -41,7 +41,7 @@ public enum ProjectItemTypeEnum {
     SIGN_PAD("SIGN_PAD", "手写签名", SignPadExpandStruct.class),
     PAGINATION("PAGINATION", "分页", PaginationExpandStruct.class),
     DIVIDER("DIVIDER", "分割线", DividerExpandStruct.class),
-    PROVINCE_CITY("PROVINCE_CITY", "省市联动", EmptyExpandStruct.class),
+    PROVINCE_CITY("PROVINCE_CITY", "省市联动", ProvinceCityExpandStruct.class),
     PHONE_VERIFICATION("PHONE_VERIFICATION", "手机号验证", EmptyExpandStruct.class),
     INPUT_MAP("INPUT_MAP", "地理位置", EmptyExpandStruct.class),
     MATRIX_SCALE("MATRIX_SCALE", "矩阵量表", MatrixscaleExpandStuct.class),

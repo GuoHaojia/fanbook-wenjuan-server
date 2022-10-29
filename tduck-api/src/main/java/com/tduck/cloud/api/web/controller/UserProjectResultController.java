@@ -437,10 +437,10 @@ public class UserProjectResultController {
         projectService.updateById(one);
         //各推送答卷答题数
         PublishEntity ps= userPublishService.getOne(Wrappers.<PublishEntity>lambdaQuery().eq(PublishEntity::getKey, entity.getProjectKey()).eq(PublishEntity::getGuildId, entity.getGuildId()).eq(PublishEntity::getFbChannel, entity.getChatId()).eq(PublishEntity::getPublishTime, entity.getPublishTime()));
-        if (ObjectUtil.isNull(ps)) {
-            throw new BaseException("问卷推送时间错误");
+        if (ObjectUtil.isNotNull(ps)) {
+            ps.setAnswerNum((int) redisUtils.incr(StrUtil.format(ProjectRedisKeyConstants.PROJECT_RESULT_NUMBER, ps.getId()), CommonConstants.ConstantNumber.ONE));
+            log.error("无此统计数据");
         }
-        ps.setAnswerNum((int) redisUtils.incr(StrUtil.format(ProjectRedisKeyConstants.PROJECT_RESULT_NUMBER, ps.getId()), CommonConstants.ConstantNumber.ONE));
     }
 
     //答卷数据统计
@@ -456,7 +456,7 @@ public class UserProjectResultController {
             Map<String, Object> originalData = entity.getOriginalData();
             System.out.println(originalData);
             if (ObjectUtil.isNull(originalData)) {
-                throw  new BaseException("请填写问卷");
+                log.error("数据为空，请填写问卷");
             }
             //防止答题后表单变化，对比答题数据和表单项（bug:答卷推送后，表单还能编辑，formid不唯一）
             for (Map.Entry<String, Object> entry : originalData.entrySet()) {

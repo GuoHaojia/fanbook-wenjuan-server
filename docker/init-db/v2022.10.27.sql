@@ -50,3 +50,8 @@ CREATE TABLE `pr_user_project_result` (
 alter table `pr_user_publish` modify column `publish_time` varchar(50) DEFAULT NULL;
 alter table `pr_user_project_result` modify column `publish_time` varchar(50) DEFAULT NULL;
 alter table `pr_user_publish` modify column `fb_channel_name` varchar(255) CHARACTER SET utf8mb4 DEFAULT NULL;
+
+alter table `pr_user_project` add column `project_share_img` varchar(255) CHARACTER SET utf8mb4 DEFAULT NULL after `publish_num`;
+alter table `pr_user_project` add column `main_text` varchar(255) CHARACTER SET utf8mb4 DEFAULT NULL after `project_share_img`;
+alter table `pr_user_project` add column `description` varchar(255) CHARACTER SET utf8mb4 DEFAULT NULL after `main_text`;
+alter table `pr_user_project` add column `links` varchar(255) CHARACTER SET utf8mb4 DEFAULT NULL after `description`;
