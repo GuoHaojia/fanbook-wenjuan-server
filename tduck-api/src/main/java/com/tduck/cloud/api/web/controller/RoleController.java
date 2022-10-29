@@ -92,8 +92,8 @@ public class RoleController {
     @Login
     @PostMapping("/role/view")
     @ApiOperation("用户角色逻辑")
-    public Result queryRoleLogic(){
-        List<UserProjectLogicEntity> entityList = projectLogicService.list(Wrappers.<UserProjectLogicEntity>lambdaQuery().eq(UserProjectLogicEntity::getProjectKey, "c312e2bb890248ae98d4b0ffbb0bc777").eq(UserProjectLogicEntity::getType,3));
+    public Result queryRoleLogic(@RequestParam(name = "projectKey") String projectKey){
+        List<UserProjectLogicEntity> entityList = projectLogicService.list(Wrappers.<UserProjectLogicEntity>lambdaQuery().eq(UserProjectLogicEntity::getProjectKey, projectKey).eq(UserProjectLogicEntity::getType,3));
         return Result.success(entityList);
     }
 }
