@@ -17,4 +17,15 @@ public class FanbookRole {
     Long id;
     String name;
     Long permissions;
+    Boolean mentionable;
+    Boolean hoist;
+    Long color;
+    Integer position;
+    Integer member_count;
+    Bot tag;
+
+    @Data
+    class Bot{
+        Long botId;
+    }
 }

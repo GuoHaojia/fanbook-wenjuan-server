@@ -867,7 +867,7 @@ public class UserProjectController {
      * 当前设置的状态
      */
     @GetMapping("/user/project/setting-status")
-    public Result querySettingStatus(@RequestParam String projectKey, @RequestParam(required = false) String wxOpenId, HttpServletRequest request) {
+    public Result querySettingStatus(@RequestParam String projectKey, @RequestParam(required = false) Long wxOpenId, HttpServletRequest request) {
         return userProjectSettingService.getUserProjectSettingStatus(projectKey, HttpUtils.getIpAddr(request), wxOpenId);
     }
 

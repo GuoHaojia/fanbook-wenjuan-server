@@ -11,6 +11,7 @@ import com.tduck.cloud.common.mybatis.handler.JacksonTypeHandler;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.experimental.FieldNameConstants;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import javax.validation.constraints.NotBlank;
@@ -99,8 +100,7 @@ public class UserProjectResultEntity extends BaseEntity<UserProjectResultEntity>
     /**
      * FB用户长ID
      */
-    @NotBlank
-    private String fbUserid;
+    private Long fbUserid;
     /**
      * FB用户短ID
      */
@@ -113,12 +113,10 @@ public class UserProjectResultEntity extends BaseEntity<UserProjectResultEntity>
     /**
      * FB服务器ID
      */
-    @NotBlank
     private String guildId;
     /**
      * FB服务器名称
      */
-    @NotBlank
     private String guildName;
     /**
      * 微信用户信息

@@ -1,13 +1,11 @@
 package com.tduck.cloud.project.service.impl;
 
-import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.tduck.cloud.common.constant.CommonConstants;
-import com.tduck.cloud.common.entity.BaseEntity;
 import com.tduck.cloud.common.util.Result;
 import com.tduck.cloud.project.entity.UserProjectEntity;
 import com.tduck.cloud.project.entity.UserProjectResultEntity;
@@ -39,7 +37,7 @@ public class UserProjectSettingServiceImpl extends ServiceImpl<UserProjectSettin
 
 
     @Override
-    public Result getUserProjectSettingStatus(String projectKey, String requestIp, String wxOpenId) {
+    public Result getUserProjectSettingStatus(String projectKey, String requestIp, Long wxOpenId) {
         UserProjectEntity userProjectEntity = userProjectService.getByKey(projectKey);
         if (ObjectUtil.isNull(userProjectEntity) || userProjectEntity.getStatus() != ProjectStatusEnum.RELEASE) {
             return Result.success(null, "项目暂时无法填写");
@@ -92,7 +90,7 @@ public class UserProjectSettingServiceImpl extends ServiceImpl<UserProjectSettin
         }
 
         //每个fanbookid仅填写一次
-        if (setting.getWxWriteOnce() && StrUtil.isNotEmpty(wxOpenId)) {
+        if (setting.getWxWriteOnce() && wxOpenId > 0) {
             LambdaQueryWrapper<UserProjectResultEntity> wrapper = Wrappers.<UserProjectResultEntity>lambdaQuery()
                     .eq(UserProjectResultEntity::getProjectKey, projectKey)
                     .eq(UserProjectResultEntity::getFbUserid, wxOpenId);
