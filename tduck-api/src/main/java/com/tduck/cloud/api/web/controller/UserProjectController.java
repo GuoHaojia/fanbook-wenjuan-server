@@ -974,14 +974,14 @@ public class UserProjectController {
 
         List<UserProjectEntity> list = projectService.list(Wrappers.<UserProjectEntity>lambdaQuery().eq(UserProjectEntity::getFbUser, projectEntity.getFbUser())
                 .eq(UserProjectEntity::getDeleted, projectEntity.getDeleted()));
-        List<String> keys = list.stream().map(UserProjectEntity::getKey).collect(Collectors.toList());
+        List<Long> ids = list.stream().map(UserProjectEntity::getId).collect(Collectors.toList());
 
-        int key = projectService.getBaseMapper().delete(new QueryWrapper<UserProjectEntity>().in("key", keys));
+        boolean key = projectService.removeByIds(ids);
 
-        projectItemService.getBaseMapper().delete(new QueryWrapper<UserProjectItemEntity>().in("project_Key", keys));
-        projectLogicService.getBaseMapper().delete(new QueryWrapper<UserProjectLogicEntity>().in("project_Key", keys));
-        userProjectThemeService.getBaseMapper().delete(new QueryWrapper<UserProjectThemeEntity>().in("project_Key", keys));
-        userProjectSettingService.getBaseMapper().delete(new QueryWrapper<UserProjectSettingEntity>().in("project_Key", keys));
+        projectItemService.removeByIds(ids);
+        projectLogicService.removeByIds(ids);
+        userProjectThemeService.removeByIds(ids);
+        userProjectSettingService.removeByIds(ids);
 
         return Result.success(key);
     }
