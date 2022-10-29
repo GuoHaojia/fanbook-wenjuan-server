@@ -49,3 +49,4 @@ CREATE TABLE `pr_user_project_result` (
 
 alter table `pr_user_publish` modify column `publish_time` varchar(50) DEFAULT NULL;
 alter table `pr_user_project_result` modify column `publish_time` varchar(50) DEFAULT NULL;
+alter table `pr_user_publish` modify column `fb_channel_name` varchar(255) CHARACTER SET utf8mb4 DEFAULT NULL;
