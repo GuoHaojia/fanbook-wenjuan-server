@@ -22,4 +22,10 @@ public class FanbookRole {
     Long color;
     Integer position;
     Integer member_count;
+    Bot tag;
+
+    @Data
+    class Bot{
+        Long botId;
+    }
 }
