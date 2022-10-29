@@ -201,6 +201,7 @@ public class OauthService {
                 .post(data.toJSONString())
                 .sync();
 
+        Logger.getLogger("角色权限").info("角色分配json返回"+rJson);
         if (null != rJson) {
 
 

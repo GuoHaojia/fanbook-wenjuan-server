@@ -189,7 +189,11 @@ public class UserProjectResultController {
             if(flag == 2 || logic.getRoleType() == false){
 
                 //分配角色
-                oauthService.setMemberRoles(access_token,Long.valueOf(entity.getGuildId()),Long.valueOf(entity.getFbUserid()),logic.getFormItemId());
+                Boolean result = oauthService.setMemberRoles(access_token,Long.valueOf(entity.getGuildId()),Long.valueOf(entity.getFbUserid()),logic.getFormItemId());
+
+                if (result == null || result == false){
+                    Logger.getLogger("角色权限").info("角色分配失败");
+                }
             }
 
         }
