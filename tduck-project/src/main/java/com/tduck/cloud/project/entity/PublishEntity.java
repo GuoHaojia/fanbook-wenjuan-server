@@ -26,7 +26,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class PublishEntity extends BaseEntity<PublishEntity> {
     @TableId(type = IdType.AUTO)
-    Integer id;
+    Long id;
     @TableField("`key`")
     String key;
     @JsonProperty(value = "guild_id")
