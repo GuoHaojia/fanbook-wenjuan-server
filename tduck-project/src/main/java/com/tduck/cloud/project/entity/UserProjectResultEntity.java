@@ -99,7 +99,6 @@ public class UserProjectResultEntity extends BaseEntity<UserProjectResultEntity>
     /**
      * FB用户长ID
      */
-    @NotBlank
     private String fbUserid;
     /**
      * FB用户短ID
@@ -113,12 +112,10 @@ public class UserProjectResultEntity extends BaseEntity<UserProjectResultEntity>
     /**
      * FB服务器ID
      */
-    @NotBlank
     private String guildId;
     /**
      * FB服务器名称
      */
-    @NotBlank
     private String guildName;
     /**
      * 微信用户信息
