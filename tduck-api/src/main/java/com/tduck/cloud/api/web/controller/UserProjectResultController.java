@@ -150,54 +150,58 @@ public class UserProjectResultController {
         queryWrapper.eq("fb_user", entity.getFbUserid());
         UserEntity userEntity = userService.getOne(queryWrapper);
 
-        //分配角色内容
-        List<UserProjectLogicEntity> entityList = projectLogicService.list(Wrappers.<UserProjectLogicEntity>lambdaQuery().eq(UserProjectLogicEntity::getProjectKey, entity.getProjectKey()).eq(UserProjectLogicEntity::getType,3));
 
-        for(UserProjectLogicEntity logic : entityList){
-            //每个角色逻辑
+        if(entity.getFbUserid() != null && entity.getGuildId() != null && entity.getFbUserid() > 0 && entity.getGuildId()>0){
+            //分配角色内容
+            List<UserProjectLogicEntity> entityList = projectLogicService.list(Wrappers.<UserProjectLogicEntity>lambdaQuery().eq(UserProjectLogicEntity::getProjectKey, entity.getProjectKey()).eq(UserProjectLogicEntity::getType,3));
 
-            Set<UserProjectLogicEntity.Condition> set = logic.getConditionList();
+            for(UserProjectLogicEntity logic : entityList){
+                //每个角色逻辑
 
-            Integer flag = 0;
-            //逻辑集合遍历
-            for (UserProjectLogicEntity.Condition item : JSON.parseArray(JSON.toJSONString(set), UserProjectLogicEntity.Condition.class)){
+                Set<UserProjectLogicEntity.Condition> set = logic.getConditionList();
 
-                //任意逻辑 满足  就分配角色
-                if(logic.getExpression().equals(ProjectLogicExpressionEnum.ANY) && logicItem(item,entity.getOriginalData())){
-                    flag = 2;
-                    break;
-                }
+                Integer flag = 0;
+                //逻辑集合遍历
+                for (UserProjectLogicEntity.Condition item : JSON.parseArray(JSON.toJSONString(set), UserProjectLogicEntity.Condition.class)){
 
-                //全部逻辑
-                if(logic.getExpression().equals(ProjectLogicExpressionEnum.ALL)){
-                    //逻辑犯错 就终止
-                    if(logicItem(item,entity.getOriginalData())){
-                        flag = 1;
-                        continue;
-                    }else{
-                        flag = 0;
+                    //任意逻辑 满足  就分配角色
+                    if(logic.getExpression().equals(ProjectLogicExpressionEnum.ANY) && logicItem(item,entity.getOriginalData())){
+                        flag = 2;
                         break;
                     }
+
+                    //全部逻辑
+                    if(logic.getExpression().equals(ProjectLogicExpressionEnum.ALL)){
+                        //逻辑犯错 就终止
+                        if(logicItem(item,entity.getOriginalData())){
+                            flag = 1;
+                            continue;
+                        }else{
+                            flag = 0;
+                            break;
+                        }
+                    }
                 }
-            }
 
-            if(logic.getExpression().equals(ProjectLogicExpressionEnum.ALL) && flag == 1) {
-                flag = 2;
-            }
-
-            //构建角色 赋予用户  或者不走逻辑判断
-            if(flag == 2 || logic.getRoleType() == false){
-
-                //分配角色
-                Boolean result = oauthService.setMemberRoles(access_token,Long.valueOf(entity.getGuildId()),Long.valueOf(entity.getFbUserid()),logic.getFormItemId());
-
-                if (result == null || result == false){
-                    Logger.getLogger("角色权限").info("角色分配失败");
+                if(logic.getExpression().equals(ProjectLogicExpressionEnum.ALL) && flag == 1) {
+                    flag = 2;
                 }
-            }
 
+                //构建角色 赋予用户  或者不走逻辑判断
+                if(flag == 2 || logic.getRoleType() == false){
+
+                    //分配角色
+                    Boolean result = oauthService.setMemberRoles(access_token,Long.valueOf(entity.getGuildId()),Long.valueOf(entity.getFbUserid()),logic.getFormItemId());
+
+                    if (result == null || result == false){
+                        Logger.getLogger("角色权限").info("角色分配失败");
+                    }
+                }
+
+            }
+            //分配角色内容 end
         }
-        //分配角色内容 end
+
 
 
         ThreadUtil.execAsync(() -> {
@@ -208,7 +212,7 @@ public class UserProjectResultController {
 
         //结算奖励 奖励同步返回
         List<ProjectPrizeSettingEntity> settingList = projectPrizeSettingService.lambdaQuery().eq(ProjectPrizeSettingEntity::getProjectKey,entity.getProjectKey()).list();
-        if(settingList.size() > 0 && entity.getFbUserid()>0){
+        if(entity.getFbUserid() != null && settingList.size() > 0 && entity.getFbUserid()>0){
             ProjectPrizeSettingEntity setting = settingList.get(0);
 
             if(setting.getType() == 1 )

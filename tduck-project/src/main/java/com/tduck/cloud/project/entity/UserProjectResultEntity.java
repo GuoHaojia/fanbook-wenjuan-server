@@ -113,7 +113,7 @@ public class UserProjectResultEntity extends BaseEntity<UserProjectResultEntity>
     /**
      * FB服务器ID
      */
-    private String guildId;
+    private Long guildId;
     /**
      * FB服务器名称
      */
