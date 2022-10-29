@@ -208,7 +208,7 @@ public class UserProjectResultController {
 
         //结算奖励 奖励同步返回
         List<ProjectPrizeSettingEntity> settingList = projectPrizeSettingService.lambdaQuery().eq(ProjectPrizeSettingEntity::getProjectKey,entity.getProjectKey()).list();
-        if(settingList.size() > 0){
+        if(settingList.size() > 0 && entity.getFbUserid()>0){
             ProjectPrizeSettingEntity setting = settingList.get(0);
 
             if(setting.getType() == 1 )
@@ -228,7 +228,7 @@ public class UserProjectResultController {
                         ProjectPrizeItemEntity prizeItem = prizeList.get(0);
                         ProjectPrizeItemEntity newItem = ProjectPrizeItemEntity.builder()
                                 .phoneNumber(userEntity.getPhoneNumber())
-                                .fanbookid(entity.getFbUserid())
+                                .fanbookid(entity.getFbUserid()+"")
                                 .nickname(userEntity.getName())
                                 .getTime(LocalDateTime.now())
                                 .build();
@@ -260,7 +260,7 @@ public class UserProjectResultController {
                                     .prize(unlimit.getDesc())
                                     .projectKey(entity.getProjectKey())
                                     .phoneNumber(userEntity.getPhoneNumber())
-                                    .fanbookid(entity.getFbUserid())
+                                    .fanbookid(entity.getFbUserid()+"")
                                     .nickname(userEntity.getName())
                                     .getTime(LocalDateTime.now())
                                     .status(true)

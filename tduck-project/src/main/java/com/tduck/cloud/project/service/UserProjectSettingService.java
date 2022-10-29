@@ -22,7 +22,7 @@ public interface UserProjectSettingService extends IService<UserProjectSettingEn
      * @param wxOpenId
      * @return
      */
-    Result getUserProjectSettingStatus(String projectKey, String requestIp, String wxOpenId);
+    Result getUserProjectSettingStatus(String projectKey, String requestIp, Long wxOpenId);
 
 
     /**
