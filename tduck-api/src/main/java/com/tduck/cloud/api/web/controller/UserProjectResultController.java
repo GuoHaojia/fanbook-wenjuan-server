@@ -1,9 +1,12 @@
 package com.tduck.cloud.api.web.controller;
 
+import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
@@ -11,9 +14,11 @@ import cn.hutool.poi.excel.ExcelUtil;
 import cn.hutool.poi.excel.ExcelWriter;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tduck.cloud.account.entity.UserEntity;
 import com.tduck.cloud.account.service.UserService;
 import com.tduck.cloud.account.vo.UserRoleVo;
@@ -24,6 +29,7 @@ import com.tduck.cloud.api.web.fb.service.OauthService;
 import com.tduck.cloud.common.constant.CommonConstants;
 import com.tduck.cloud.common.email.MailService;
 import com.tduck.cloud.common.exception.BaseException;
+import com.tduck.cloud.common.util.JsonUtils;
 import com.tduck.cloud.common.util.RedisUtils;
 import com.tduck.cloud.common.util.Result;
 import com.tduck.cloud.common.validator.ValidatorUtils;
@@ -36,10 +42,12 @@ import com.tduck.cloud.project.service.*;
 import com.tduck.cloud.project.vo.DxCountVo;
 import com.tduck.cloud.project.vo.ExportProjectResultVO;
 import com.tduck.cloud.wx.mp.service.WxMpUserMsgService;
+import jdk.internal.org.objectweb.asm.TypeReference;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
@@ -453,7 +461,6 @@ public class UserProjectResultController {
 
     //答卷数据统计
     public void calculateProjectResult(UserProjectResultEntity entity) {
-//        UserProjectResultEntity entity = queue.poll();
         if (ObjectUtil.isNotNull(entity)) {
             //数据
             List<UserProjectItemEntity> itemEntityList = projectItemService.list(Wrappers.<UserProjectItemEntity>lambdaQuery()
@@ -474,20 +481,47 @@ public class UserProjectResultController {
                 itemEntityList.forEach(item -> {
                     if (key.substring(5,8).equals(String.valueOf(item.getFormItemId())) && ObjectUtil.isNotNull(value)) {
                         String type = item.getType().getValue();
+                        String pkey = item.getProjectKey();
+                        Long id = item.getId();
                         //题目计数
-                        redisUtils.incr(StrUtil.format("PROJECT_RESULT_"+type+":{}", item.getProjectKey()+"/"+item.getId()), CommonConstants.ConstantNumber.ONE);
+                        redisUtils.incr(StrUtil.format("PROJECT_RESULT_"+type+":{}", pkey+"/"+id), CommonConstants.ConstantNumber.ONE);
                         //多选 单选 下拉 图片选择 评分
                         if (type == "CHECKBOX" || type == "RADIO" || type == "SELECT" || type == "IMAGE_SELECT" ||type == "RATE") {
                             //选项计数
-                            this.redisIncr(value, item, type);
+                            this.redisIncr(value, pkey, id, type);
                         }
                         //矩阵量表
-                        if (item.getType().equals("MATRIX_SCALE")) {
-                            this.redisIncr(value, item, "TEXTAREA");
+                        if (type == "MATRIX_SCALE") {
+                            Map<String, Object> parse = JsonUtils.jsonToMap(JSON.toJSONString(value));
+                            System.out.println(parse);
+                            parse.forEach((k, v) -> {
+                                System.out.println(k);
+                                System.out.println(v);
+                                if (Integer.parseInt(v.toString())!=0) {
+                                    //选项行计数
+                                    this.redisIn(type, pkey, id, k, null);
+                                    //选项列计数
+                                    this.redisIn(type, pkey, id, k, v);
+                                }
+                            });
                         }
                         //矩阵选择
-                        if (item.getType().equals("MATRIX_SELECT")) {
-                            this.redisIncr(value, item, "TEXTAREA");
+                        if (type =="MATRIX_SELECT") {
+                            Map<String, Object> parse = JsonUtils.jsonToMap(JSON.toJSONString(value));
+                            System.out.println(parse);
+                            parse.forEach((k, v) -> {
+                                System.out.println(k);
+                                System.out.println(v);
+                                List v1 = (List) v;
+                                if (CollectionUtil.isNotEmpty(v1)) {
+                                    //选项行计数
+                                    this.redisIn(type, pkey, id, k, null);
+                                    //选项列计数
+                                    v1.forEach(l -> {
+                                        this.redisIn(type, pkey, id, k, l);
+                                    });
+                                }
+                            });
                         }
                     }
                 });
@@ -498,7 +532,7 @@ public class UserProjectResultController {
     /**
      * 选项计数
      */
-    public void redisIncr(Object value, UserProjectItemEntity item, String type) {
+    public void redisIncr(Object value, String pkey, Long id, String type) {
         //排除答题单、双选设置
         if (value instanceof List) {
             List jsonObject = JSONArray.parseObject(JSON.toJSONString(value), List.class);
@@ -506,11 +540,19 @@ public class UserProjectResultController {
             jsonObject.forEach(index -> {
                 System.out.println(index);
                 //(index)排除选项同名bug
-                redisUtils.incr(StrUtil.format("PROJECT_RESULT_"+type+":{}", item.getProjectKey()+"/"+item.getId()+"/"+index), CommonConstants.ConstantNumber.ONE);
+                this.redisIn(type, pkey, id, index, null);
             });
         } else {
-            redisUtils.incr(StrUtil.format("PROJECT_RESULT_"+type+":{}", item.getProjectKey()+"/"+item.getId()+"/"+value), CommonConstants.ConstantNumber.ONE);
+            System.out.println(value);
+            this.redisIn(type, pkey, id, value, null);
         }
+    }
+
+    public void redisIn(String type, String pkey, Long id, Object k, Object v){
+        if (ObjectUtil.isNull(v)) {
+            redisUtils.incr(StrUtil.format("PROJECT_RESULT_"+type+":{}", pkey+"/"+id+"/"+k), CommonConstants.ConstantNumber.ONE);
+        }
+        redisUtils.incr(StrUtil.format("PROJECT_RESULT_"+type+":{}", pkey+"/"+id+"/"+k+"/"+v), CommonConstants.ConstantNumber.ONE);
     }
 
 
