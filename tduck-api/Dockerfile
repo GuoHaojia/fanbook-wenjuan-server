@@ -1,6 +1,9 @@
 FROM tarscloud/tars.javabase
 EXPOSE 8999
 
+# /etc/localtime as a solt link will block container mount /etc/localtime from host
+RUN rm -rf /etc/localtime
+
 VOLUME /tmp
 
 ADD target/tduck-api.jar /app.jar
