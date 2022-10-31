@@ -479,7 +479,7 @@ public class UserProjectController {
                 PublishEntity pb = userPublishService.getOne(Wrappers.<PublishEntity>lambdaQuery().eq(PublishEntity::getId, id));
                 pb.setStatus(4);
                 pb.updateById();
-                return Result.success("取消成功");
+                return Result.success(id, "取消成功");
             }
             return Result.failed("取消失败，请重试");
         }

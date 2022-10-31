@@ -144,6 +144,7 @@ public class UserProjectResultController {
         Boolean save = projectResultService.saveProjectResult(entity);
 
         if (BooleanUtil.isTrue(save)) {
+            log.info("答卷结果提交，开始统计");
             queue.offer(entity);
             UserProjectResultEntity poll = queue.poll();
 
@@ -151,6 +152,8 @@ public class UserProjectResultController {
             this.setResultNum(poll);
             //答卷统计
             this.calculateProjectResult(poll);
+        } else {
+            return Result.failed("答卷结果提交失败");
         }
 
         ///fbuserid 转uid
@@ -453,9 +456,10 @@ public class UserProjectResultController {
         projectService.updateById(one);
         //各推送答卷答题数
         PublishEntity ps= userPublishService.getOne(Wrappers.<PublishEntity>lambdaQuery().eq(PublishEntity::getKey, entity.getProjectKey()).eq(PublishEntity::getGuildId, entity.getGuildId()).eq(PublishEntity::getFbChannel, entity.getChatId()).eq(PublishEntity::getPublishTime, entity.getPublishTime()));
-        if (ObjectUtil.isNotNull(ps)) {
+        if (ObjectUtil.isNull(ps)) {
+            log.error("无此条推送数据");
+        } else {
             ps.setAnswerNum((int) redisUtils.incr(StrUtil.format(ProjectRedisKeyConstants.PROJECT_RESULT_NUMBER, ps.getId()), CommonConstants.ConstantNumber.ONE));
-            log.error("无此统计数据");
         }
     }
 
@@ -548,11 +552,15 @@ public class UserProjectResultController {
         }
     }
 
+    /**
+     * 选项计数
+     */
     public void redisIn(String type, String pkey, Long id, Object k, Object v){
         if (ObjectUtil.isNull(v)) {
             redisUtils.incr(StrUtil.format("PROJECT_RESULT_"+type+":{}", pkey+"/"+id+"/"+k), CommonConstants.ConstantNumber.ONE);
+        } else {
+            redisUtils.incr(StrUtil.format("PROJECT_RESULT_"+type+":{}", pkey+"/"+id+"/"+k+"/"+v), CommonConstants.ConstantNumber.ONE);
         }
-        redisUtils.incr(StrUtil.format("PROJECT_RESULT_"+type+":{}", pkey+"/"+id+"/"+k+"/"+v), CommonConstants.ConstantNumber.ONE);
     }
 
 
