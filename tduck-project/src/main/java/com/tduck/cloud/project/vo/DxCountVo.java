@@ -22,6 +22,8 @@ public class DxCountVo {
         public String key;
 
         public Object value;
+
+        public String percent;
     }
 
 }

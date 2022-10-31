@@ -20,7 +20,7 @@ SET FOREIGN_KEY_CHECKS=0;
 -- ----------------------------
 DROP TABLE IF EXISTS `pr_user_publish`;
 CREATE TABLE `pr_user_publish`  (
-  `id` int(20) NOT NULL AUTO_INCREMENT,
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `key` varchar(255) CHARACTER SET utf8 DEFAULT NULL,
   `guild_id` bigint(20) DEFAULT NULL comment '服务器id',
   `guild_name` varchar(255) CHARACTER SET utf8 DEFAULT NULL,
@@ -34,3 +34,7 @@ CREATE TABLE `pr_user_publish`  (
   `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 ROW_FORMAT = Dynamic COMMENT '推送消息表';
+
+
+alter table `pr_user_publish` modify column `id` bigint(20) NOT NULL AUTO_INCREMENT;
+alter table `pr_user_publish` modify column `guild_id` bigint(20) DEFAULT NULL comment '服务器id';

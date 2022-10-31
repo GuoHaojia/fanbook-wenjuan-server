@@ -33,4 +33,8 @@ public class InputExpandStruct {
      * 显示可输入字数
      */
     private Boolean showWordLimit;
+
+    private Long minlength;
+
+    private String type;
 }

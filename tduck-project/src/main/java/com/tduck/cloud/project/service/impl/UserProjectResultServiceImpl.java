@@ -29,6 +29,7 @@ import com.tduck.cloud.project.service.UserProjectItemService;
 import com.tduck.cloud.project.service.UserProjectResultService;
 import com.tduck.cloud.project.vo.DxCountVo;
 import com.tduck.cloud.project.vo.ExportProjectResultVO;
+import com.tduck.cloud.project.vo.JzCountVo;
 import com.tduck.cloud.storage.cloud.OssStorageFactory;
 import com.tduck.cloud.storage.util.StorageUtils;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +38,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.text.DecimalFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -233,47 +235,105 @@ public class UserProjectResultServiceImpl extends ServiceImpl<UserProjectResultM
             if (type == "CHECKBOX" || type == "RADIO" || type == "SELECT" || type == "IMAGE_SELECT") {
                 List<Map<String, Object>> options = JSONArray.parseObject(JSON.toJSONString(expand.get("options")), List.class);
                 List ops = new ArrayList();
+                Object rs2 = this.getRedisIncr(type, projectKey, id, null, null);
+                Object rs3 = ObjectUtil.isNotNull(rs2) ? rs2 : 0;
                 options.forEach(map -> {
-                    Object rs1 = this.getRedisIncr(type, projectKey, id, map.get("value"));
-                    DxCountVo.Option op = new DxCountVo.Option((String) map.get("label"), ObjectUtil.isNotNull(rs1) ? rs1 : 0);
+                    Object rs1 = this.getRedisIncr(type, projectKey, id, map.get("value"), null);
+                    DxCountVo.Option op = new DxCountVo.Option((String) map.get("label"), ObjectUtil.isNotNull(rs1) ? rs1 : 0, this.getPercent(rs1, rs3));
                     ops.add(op);
                 });
-                Object rs2 = this.getRedisIncr(type, projectKey, id, null);
-                DxCountVo dx = new DxCountVo(label + "/" + type + "/" + id, ops, ObjectUtil.isNotNull(rs2) ? rs2 : 0);
+                DxCountVo dx = new DxCountVo(label + "/" + type + "/" + id, ops, rs3);
                 tm.add(dx);
             }
             //评分
             if (type == "RATE") {
-                Integer max = (Integer) expand.get("max");
+                Integer max = Integer.parseInt(expand.get("max").toString());
                 List ops = new ArrayList();
+                Object rs2 = this.getRedisIncr(type, projectKey, id, null, null);
+                Object rs3 = ObjectUtil.isNotNull(rs2) ? rs2 : 0;
                 for (int i=1; i<=max; i++) {
-                    Object rs1 = this.getRedisIncr(type, projectKey, id, i);
-                    DxCountVo.Option op = new DxCountVo.Option(i+"星", ObjectUtil.isNotNull(rs1) ? rs1 : 0);
+                    Object rs1 = this.getRedisIncr(type, projectKey, id, i, null);
+                    DxCountVo.Option op = new DxCountVo.Option(i+"星", ObjectUtil.isNotNull(rs1) ? rs1 : 0, this.getPercent(rs1, rs3));
                     ops.add(op);
                 }
-                Object rs2 = this.getRedisIncr(type, projectKey, id, null);
-                DxCountVo dx = new DxCountVo(label + "/" + type + "/" + id, ops, ObjectUtil.isNotNull(rs2) ? rs2 : 0);
+                DxCountVo dx = new DxCountVo(label + "/" + type + "/" + id, ops, rs3);
                 tm.add(dx);
             }
             //单行文本 多行文本 日期 时间 省市区 评分 上传图片 上传文件
             if (type == "INPUT" || type == "TEXTAREA" ||type == "DATE" || type == "TIME" || type == "PROVINCE_CITY" || type == "IMAGE_UPLOAD" || type == "UPLOAD") {
-                Object rs2 = this.getRedisIncr(type, projectKey, id, null);
+                Object rs2 = this.getRedisIncr(type, projectKey, id, null, null);
                 DxCountVo dx = new DxCountVo(label + "/" + type + "/" + id, null, ObjectUtil.isNotNull(rs2) ? rs2 : 0);
                 tm.add(dx);
             }
+            //矩阵量表
+            if (type == "MATRIX_SCALE") {
+                List jm = new ArrayList();
+                Map<String, Object> table = JsonUtils.jsonToMap(JSON.toJSONString(expand.get("table")));
+                Integer level = Integer.parseInt(table.get("level").toString());
+                List<Map<String, Object>> rows = (List<Map<String, Object>>) table.get("rows");
+                rows.forEach(row -> {
+                    Object is = row.get("id");
+                    Object la = row.get("label");
+                    List ops = new ArrayList();
+                    Object rs2 = this.getRedisIncr(type, projectKey, id, is, null);
+                    Object rs3 = ObjectUtil.isNotNull(rs2) ? rs2 : 0;
+                    for (int i=1; i<=level; i++) {
+                        Object rs1 = this.getRedisIncr(type, projectKey, id, is, i);
+                        DxCountVo.Option op = new DxCountVo.Option(i+"星", ObjectUtil.isNotNull(rs1) ? rs1 : 0, this.getPercent(rs1, rs3));
+                        ops.add(op);
+                    }
+                    DxCountVo dx = new DxCountVo(la+"", ops, rs3);
+                    jm.add(dx);
+                });
+                tm.add(new JzCountVo(label + "/" + type + "/" + id, jm));
+            }
+            //矩阵选择
+            if (type == "MATRIX_SELECT") {
+                List jm = new ArrayList();
+                Map<String, Object> table = JsonUtils.jsonToMap(JSON.toJSONString(expand.get("table")));
+//                Map<String, List<Map>> table = (Map<String, List<Map>>) JSON.parse(JSON.toJSONString(expand.get("table")));
+                List<Map<String, Object>> rows = (List<Map<String, Object>>) table.get("rows");
+                List<Map<String, Object>> columns = (List<Map<String, Object>>) table.get("columns");
+                rows.forEach(row -> {
+                    Object is = row.get("id");
+                    Object la = row.get("label");
+                    List ops = new ArrayList();
+                    Object rs2 = this.getRedisIncr(type, projectKey, id, is, null);
+                    Object rs3 = ObjectUtil.isNotNull(rs2) ? rs2 : 0;
+                    columns.forEach(column -> {
+                        Object iz = column.get("id");
+                        Object ly = column.get("label");
+                        Object rs1 = this.getRedisIncr(type, projectKey, id, is, iz);
+                        DxCountVo.Option op = new DxCountVo.Option(ly+"", ObjectUtil.isNotNull(rs1) ? rs1 : 0, this.getPercent(rs1, rs3));
+                        ops.add(op);
+                    });
+                    DxCountVo dx = new DxCountVo(la+"", ops, rs3);
+                    jm.add(dx);
+                });
+                tm.add(new JzCountVo(label + "/" + type + "/" + id, jm));
+            }
         });
-        //矩阵量表
-
-        //矩阵选择
-
         return JSONArray.parseArray(JSON.toJSONString(tm));
     }
 
-    public Object getRedisIncr(String type, String projectKey, Long id, Object v){
-
-        if (ObjectUtil.isNull(v)) {
+    public Object getRedisIncr(String type, String projectKey, Long id, Object k, Object v){
+        if (ObjectUtil.isNull(k) && ObjectUtil.isNull(v)) {
             return redisUtils.get(StrUtil.format("PROJECT_RESULT_"+type+":{}", projectKey+"/"+id));
         }
-        return redisUtils.get(StrUtil.format("PROJECT_RESULT_"+type+":{}", projectKey+"/"+id+"/"+v));
+        if (ObjectUtil.isNull(v)) {
+            return redisUtils.get(StrUtil.format("PROJECT_RESULT_"+type+":{}", projectKey+"/"+id+"/"+k));
+        }
+        return redisUtils.get(StrUtil.format("PROJECT_RESULT_"+type+":{}", projectKey+"/"+id+"/"+k+"/"+v));
+    }
+
+    public static String getPercent(Object x, Object y) {
+        // 设置保留几位小数， “.”后面几个零就保留几位小数，这里设置保留四位小数
+        DecimalFormat decimalFormat = new DecimalFormat("##.00%");
+        if (Integer.parseInt(y.toString())==0 || ObjectUtil.isNull(x)) {
+            return "0";
+        }
+        double x1=Double.parseDouble(x.toString());
+        double y1=Double.parseDouble(y.toString());
+        return decimalFormat.format(x1 / y1);
     }
 }
