@@ -42,6 +42,8 @@ public class OperateProjectItemRequest {
     private String name;
 
 
+    private String textType;
+
     /**
      * 是否有输入值
      */

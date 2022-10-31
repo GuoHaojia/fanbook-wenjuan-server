@@ -48,6 +48,8 @@ public class UserProjectItemEntity extends BaseEntity<UserProjectItemEntity> {
     private String label;
 
 
+    private String textType;
+
     /**
      * 展示类型组件
      */
