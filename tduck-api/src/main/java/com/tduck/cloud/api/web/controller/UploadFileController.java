@@ -80,7 +80,6 @@ public class UploadFileController {
 
         } catch (IOException e) {
             e.printStackTrace();
-            throw new BaseException("上传失败");
         }
 
 

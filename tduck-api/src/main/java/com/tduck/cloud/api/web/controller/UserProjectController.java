@@ -144,6 +144,7 @@ public class UserProjectController {
         project.setName(project.getName());
         project.setAnswerNum(0);
         project.setPublishNum(0);
+        project.setStatus(ProjectStatusEnum.CREATE);
         project.setKey(IdUtil.fastSimpleUUID());
         project.setUserId(userEntity.getId());
         project.setFbUser(project.getFbUser());
