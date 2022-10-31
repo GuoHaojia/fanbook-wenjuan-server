@@ -21,6 +21,7 @@ import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.logging.Logger;
 
 /**
  * 项目表单项(UserProjectSetting)表服务实现类
@@ -90,7 +91,7 @@ public class UserProjectSettingServiceImpl extends ServiceImpl<UserProjectSettin
         }
 
         //每个fanbookid仅填写一次
-        if (setting.getWxWriteOnce() !=null && setting.getWxWriteOnce() && wxOpenId > 0) {
+        if (setting.getWxWriteOnce() !=null && wxOpenId!=null && setting.getWxWriteOnce() && wxOpenId > 0) {
             LambdaQueryWrapper<UserProjectResultEntity> wrapper = Wrappers.<UserProjectResultEntity>lambdaQuery()
                     .eq(UserProjectResultEntity::getProjectKey, projectKey)
                     .eq(UserProjectResultEntity::getFbUserid, wxOpenId);
