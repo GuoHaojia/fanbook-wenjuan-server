@@ -132,12 +132,12 @@ public class UserProjectResultController {
 //        AtomicInteger count = new AtomicInteger();
 
         //本地测试
-        if(debug){
+        /*if(debug){
             entity.setFbUserid(416120040304148480L);
             entity.setFbUsername("拉风的宅男");
             entity.setGuildId(420861300550139904L);
             entity.setGuildName("测试服务");
-        }
+        }*/
 
         ValidatorUtils.validateEntity(entity);
         UserProjectEntity one = projectService.getOne(Wrappers.<UserProjectEntity>lambdaQuery().eq(UserProjectEntity::getKey, entity.getProjectKey()));
