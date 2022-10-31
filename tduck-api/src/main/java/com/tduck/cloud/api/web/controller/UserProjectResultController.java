@@ -500,6 +500,7 @@ public class UserProjectResultController {
             log.error("无此条推送数据");
         } else {
             ps.setAnswerNum((int) redisUtils.incr(StrUtil.format(ProjectRedisKeyConstants.PROJECT_RESULT_NUMBER, ps.getId()), CommonConstants.ConstantNumber.ONE));
+            userPublishService.updateById(ps);
         }
     }
 
