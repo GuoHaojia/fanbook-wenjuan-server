@@ -90,7 +90,7 @@ public class UserProjectSettingServiceImpl extends ServiceImpl<UserProjectSettin
         }
 
         //每个fanbookid仅填写一次
-        if (setting.getWxWriteOnce() && wxOpenId > 0) {
+        if (setting.getWxWriteOnce() !=null && setting.getWxWriteOnce() && wxOpenId > 0) {
             LambdaQueryWrapper<UserProjectResultEntity> wrapper = Wrappers.<UserProjectResultEntity>lambdaQuery()
                     .eq(UserProjectResultEntity::getProjectKey, projectKey)
                     .eq(UserProjectResultEntity::getFbUserid, wxOpenId);
