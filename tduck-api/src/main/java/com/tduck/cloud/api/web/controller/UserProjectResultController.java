@@ -39,6 +39,7 @@ import com.tduck.cloud.common.validator.ValidatorUtils;
 import com.tduck.cloud.project.constant.ProjectRedisKeyConstants;
 import com.tduck.cloud.project.entity.*;
 import com.tduck.cloud.project.entity.enums.ProjectLogicExpressionEnum;
+import com.tduck.cloud.project.entity.enums.ProjectStatusEnum;
 import com.tduck.cloud.project.entity.struct.RadioExpandStruct;
 import com.tduck.cloud.project.request.QueryProjectResultRequest;
 import com.tduck.cloud.project.service.*;
@@ -139,6 +140,10 @@ public class UserProjectResultController {
         }
 
         ValidatorUtils.validateEntity(entity);
+        UserProjectEntity one = projectService.getOne(Wrappers.<UserProjectEntity>lambdaQuery().eq(UserProjectEntity::getKey, entity.getProjectKey()));
+        if (one.getStatus() == ProjectStatusEnum.STOP) {
+            return Result.failed("问卷已停止，不允许填写");
+        }
         entity.setSubmitRequestIp(HttpUtils.getIpAddr(request));
 
         //校验时间 填写次数等
@@ -150,6 +155,7 @@ public class UserProjectResultController {
         Boolean save = projectResultService.saveProjectResult(entity);
 
         if (BooleanUtil.isTrue(save)) {
+            log.info("答卷结果提交，开始统计");
             queue.offer(entity);
             UserProjectResultEntity poll = queue.poll();
 
@@ -157,6 +163,8 @@ public class UserProjectResultController {
             this.setResultNum(poll);
             //答卷统计
             this.calculateProjectResult(poll);
+        } else {
+            return Result.failed("答卷结果提交失败");
         }
 
         ///fbuserid 转uid
@@ -488,9 +496,10 @@ public class UserProjectResultController {
         projectService.updateById(one);
         //各推送答卷答题数
         PublishEntity ps= userPublishService.getOne(Wrappers.<PublishEntity>lambdaQuery().eq(PublishEntity::getKey, entity.getProjectKey()).eq(PublishEntity::getGuildId, entity.getGuildId()).eq(PublishEntity::getFbChannel, entity.getChatId()).eq(PublishEntity::getPublishTime, entity.getPublishTime()));
-        if (ObjectUtil.isNotNull(ps)) {
+        if (ObjectUtil.isNull(ps)) {
+            log.error("无此条推送数据");
+        } else {
             ps.setAnswerNum((int) redisUtils.incr(StrUtil.format(ProjectRedisKeyConstants.PROJECT_RESULT_NUMBER, ps.getId()), CommonConstants.ConstantNumber.ONE));
-            log.error("无此统计数据");
         }
     }
 
@@ -583,11 +592,15 @@ public class UserProjectResultController {
         }
     }
 
+    /**
+     * 选项计数
+     */
     public void redisIn(String type, String pkey, Long id, Object k, Object v){
         if (ObjectUtil.isNull(v)) {
             redisUtils.incr(StrUtil.format("PROJECT_RESULT_"+type+":{}", pkey+"/"+id+"/"+k), CommonConstants.ConstantNumber.ONE);
+        } else {
+            redisUtils.incr(StrUtil.format("PROJECT_RESULT_"+type+":{}", pkey+"/"+id+"/"+k+"/"+v), CommonConstants.ConstantNumber.ONE);
         }
-        redisUtils.incr(StrUtil.format("PROJECT_RESULT_"+type+":{}", pkey+"/"+id+"/"+k+"/"+v), CommonConstants.ConstantNumber.ONE);
     }
 
 

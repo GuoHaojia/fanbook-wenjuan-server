@@ -8,6 +8,11 @@ import java.util.List;
 public class MatrixselectExpandStuct {
     private Table table;
 
+    /**
+     * 多选
+     */
+    private Boolean multiple;
+
     public static class Table {
         public List<Option> rows;
         public List<Option> columns;
