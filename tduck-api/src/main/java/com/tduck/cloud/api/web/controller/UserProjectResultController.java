@@ -36,6 +36,7 @@ import com.tduck.cloud.common.validator.ValidatorUtils;
 import com.tduck.cloud.project.constant.ProjectRedisKeyConstants;
 import com.tduck.cloud.project.entity.*;
 import com.tduck.cloud.project.entity.enums.ProjectLogicExpressionEnum;
+import com.tduck.cloud.project.entity.enums.ProjectStatusEnum;
 import com.tduck.cloud.project.entity.struct.RadioExpandStruct;
 import com.tduck.cloud.project.request.QueryProjectResultRequest;
 import com.tduck.cloud.project.service.*;
@@ -133,6 +134,10 @@ public class UserProjectResultController {
         }*/
 
         ValidatorUtils.validateEntity(entity);
+        UserProjectEntity one = projectService.getOne(Wrappers.<UserProjectEntity>lambdaQuery().eq(UserProjectEntity::getKey, entity.getProjectKey()));
+        if (one.getStatus() == ProjectStatusEnum.STOP) {
+            return Result.failed("问卷已停止，不允许填写");
+        }
         entity.setSubmitRequestIp(HttpUtils.getIpAddr(request));
 
         //校验时间 填写次数等
