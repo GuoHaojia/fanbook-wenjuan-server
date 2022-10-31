@@ -50,5 +50,12 @@ spec:
           #args: ["-c", "while true; do sleep 10;done"]
           #securityContext:
           #  privileged: true
+          volumeMounts:
+          - name: timezone
+            mountPath: /etc/localtime                           # 挂载到容器的目录
+      volumes:
+      - name: timezone
+        hostPath:
+          path: /usr/share/zoneinfo/Asia/Shanghai               # 宿主机的目录
       enableServiceLinks: false
       restartPolicy: Always
