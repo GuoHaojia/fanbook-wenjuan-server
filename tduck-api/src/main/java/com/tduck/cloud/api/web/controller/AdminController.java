@@ -48,7 +48,6 @@ public class AdminController {
      * 分类对管理一对多
      *
      * */
-    @Login
     @PostMapping("/role/group")
     @ApiOperation("后端管理员列表")
     public Result queryList(@RequestBody AdminVo adminVo){
