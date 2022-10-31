@@ -11,8 +11,10 @@ import com.tduck.cloud.account.entity.FanbookMember;
 import com.tduck.cloud.account.entity.FanbookRole;
 import com.tduck.cloud.account.entity.UserInfo;
 import com.tduck.cloud.account.util.OkHttpUtils;
+import com.tduck.cloud.account.vo.Chat;
 import com.tduck.cloud.account.vo.Sign;
 import com.tduck.cloud.account.vo.UserPoint;
+import com.tduck.cloud.common.constant.FanbookCard;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -223,6 +225,27 @@ public class OauthService {
                 .sync();
 
         return JSONObject.parseObject(rJson).getJSONObject("result").get("exists").toString();
+    }
+
+    public Chat getPrivateChat(String access_token , Long user_id){
+        JSONObject data = new JSONObject();
+        data.put("user_id",user_id);
+
+        String rJson = OkHttpUtils
+                .builder().url(robothost + "/" + access_token + "/getPrivateChat")
+                .addHeader("content-type", "application/json")
+                .addHeader("authorization", "Bearer " + access_token)
+                .post(data.toJSONString())
+                .sync();
+
+        Logger.getLogger("getPrivateChat").info(rJson);
+        Chat chat = null;
+        JSONObject chatJson = JSONObject.parseObject(rJson).getJSONObject("result");
+        if (null != chatJson) {
+            chat = chatJson.toJavaObject(Chat.class);
+        }
+
+        return chat;
     }
 
     public void modifyUserPoint(String bizId,Long guildId,Long fbLongId,Integer point,String remark){

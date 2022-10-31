@@ -12,6 +12,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.google.common.collect.Sets;
 import com.tduck.cloud.account.entity.UserEntity;
 import com.tduck.cloud.account.service.UserService;
+import com.tduck.cloud.account.vo.Chat;
 import com.tduck.cloud.api.annotation.Login;
 import com.tduck.cloud.api.util.HttpUtils;
 import com.tduck.cloud.api.web.fb.service.OauthService;
@@ -101,7 +102,11 @@ public class UserProjectController {
     @Value("${fb.open.redirect_uri}")
     String appUrl;
 
+    @Value("${fb.bot.token}")
+    private String access_token;
 
+    @Value("${fb.open.api.scoreredirecthost}")
+    private String scoreHost;
 
     /**
      * 当前设置的状态
@@ -533,6 +538,28 @@ public class UserProjectController {
         return Result.success(projectService.updateById(entity));
     }
 
+
+    private void notifyUser(Long user_id , String text , Boolean isScore){
+        //通知用户
+        Chat chat = oauthService.getPrivateChat(access_token,user_id);
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("chat_id", chat.getId());
+        JSONObject cardJson;
+        if(isScore){
+            cardJson = FanbookCard.getPrizeString("奖品发放通知", "您参与的问卷《这是问卷名称》中获得了"+text+"，奖品已发放。\n感谢您参加本次调研活动。", scoreHost,"积分商城");
+        }else{
+            cardJson = FanbookCard.getCdkString("奖品详情", "兑换码："+text+"\n感谢您参加本次调研活动。");
+        }
+
+        JSONObject taskJson = new JSONObject();
+        taskJson.put("type", "task");
+        taskJson.put("content", cardJson);
+        jsonObject.put("text", taskJson.toString());
+        jsonObject.put("parse_mode", "Fanbook");
+
+        String rstr = fanbookService.sendMessage(jsonObject);
+    }
+
     private Boolean winPrize(ProjectPrizeSettingEntity setting,String projectKey,UserProjectResultEntity userProjectResultEntity){
         if(setting.getProbability() == 1 || (int)Math.random()*(setting.getProbability()+1) == 1)
         {
@@ -564,7 +591,10 @@ public class UserProjectController {
                         ThreadUtil.execAsync(() -> {
                             //添加积分
                             oauthService.modifyUserPoint(prizeItem.getId() + "", Long.valueOf(userProjectResultEntity.getGuildId()), Long.valueOf(userProjectResultEntity.getFbUserid()), Integer.valueOf(prizeItem.getPrize()), "奖励积分");
+                            notifyUser(userProjectResultEntity.getFbUserid(),prizeItem.getPrize()+"积分",true);
                         });
+                    }else{
+                        notifyUser(userProjectResultEntity.getFbUserid(),prizeItem.getPrize(),false);
                     }
                 }
                 return true;
@@ -597,6 +627,9 @@ public class UserProjectController {
                         if(prizeItem.getType() == 1){
                             //添加积分
                             oauthService.modifyUserPoint(prizeItem.getId() + "", Long.valueOf(userProjectResultEntity.getGuildId()), Long.valueOf(userProjectResultEntity.getFbUserid()), Integer.valueOf(prizeItem.getPrize()), "奖励积分");
+                            notifyUser(userProjectResultEntity.getFbUserid(),prizeItem.getPrize()+"积分",true);
+                        }else{
+                            notifyUser(userProjectResultEntity.getFbUserid(),prizeItem.getPrize(),false);
                         }
                     }
                     return true;

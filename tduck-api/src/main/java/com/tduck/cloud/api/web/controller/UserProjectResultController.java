@@ -19,14 +19,17 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.qiniu.util.Json;
 import com.tduck.cloud.account.entity.UserEntity;
 import com.tduck.cloud.account.service.UserService;
+import com.tduck.cloud.account.vo.Chat;
 import com.tduck.cloud.account.vo.UserRoleVo;
 import com.tduck.cloud.api.annotation.Login;
 import com.tduck.cloud.api.annotation.NoRepeatSubmit;
 import com.tduck.cloud.api.util.HttpUtils;
 import com.tduck.cloud.api.web.fb.service.OauthService;
 import com.tduck.cloud.common.constant.CommonConstants;
+import com.tduck.cloud.common.constant.FanbookCard;
 import com.tduck.cloud.common.email.MailService;
 import com.tduck.cloud.common.exception.BaseException;
 import com.tduck.cloud.common.util.JsonUtils;
@@ -42,12 +45,10 @@ import com.tduck.cloud.project.service.*;
 import com.tduck.cloud.project.vo.DxCountVo;
 import com.tduck.cloud.project.vo.ExportProjectResultVO;
 import com.tduck.cloud.wx.mp.service.WxMpUserMsgService;
-import jdk.internal.org.objectweb.asm.TypeReference;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
@@ -92,11 +93,16 @@ public class UserProjectResultController {
     private final OauthService oauthService;
     private final LinkedBlockingQueue<UserProjectResultEntity> queue = new LinkedBlockingQueue<>();
 
+
+    private final FanbookService fanbookService;
     @Value("${devdebug}")
     private boolean debug;
 
-    @Value("${fb.open.api.access_token}")
+    @Value("${fb.bot.token}")
     private String access_token;
+
+    @Value("${fb.open.api.scoreredirecthost}")
+    private String scoreHost;
 
     /***
      * 查看项目
@@ -125,12 +131,12 @@ public class UserProjectResultController {
 //        AtomicInteger count = new AtomicInteger();
 
         //本地测试
-        /*if(debug){
-            entity.setFbUserid("416120040304148480");
-            entity.setFbUsername("3904464");
-            entity.setGuildId("420861300550139904");
+        if(debug){
+            entity.setFbUserid(416120040304148480L);
+            entity.setFbUsername("拉风的宅男");
+            entity.setGuildId(420861300550139904L);
             entity.setGuildName("测试服务");
-        }*/
+        }
 
         ValidatorUtils.validateEntity(entity);
         entity.setSubmitRequestIp(HttpUtils.getIpAddr(request));
@@ -203,6 +209,8 @@ public class UserProjectResultController {
 
                     if (result == null || result == false){
                         Logger.getLogger("角色权限").info("角色分配失败");
+                    }else{
+                        Logger.getLogger("角色权限").info("角色分配成功");
                     }
                 }
 
@@ -251,6 +259,9 @@ public class UserProjectResultController {
                             if(prizeItem.getType() == 1){
                                 //添加积分
                                 oauthService.modifyUserPoint(prizeItem.getId()+"",Long.valueOf(entity.getGuildId()),Long.valueOf(entity.getFbUserid()),Integer.valueOf(prizeItem.getPrize()),"奖励积分");
+                                notifyUser(entity.getFbUserid(),prizeItem.getPrize()+"积分",true);
+                            }else{
+                                notifyUser(entity.getFbUserid(),prizeItem.getPrize(),false);
                             }
 
                             //中奖了 如果是积分
@@ -284,6 +295,9 @@ public class UserProjectResultController {
                                 if(prizeItem.getType() == 1){
                                     //添加积分
                                     oauthService.modifyUserPoint(prizeItem.getId()+"",Long.valueOf(entity.getGuildId()),Long.valueOf(entity.getFbUserid()),Integer.valueOf(prizeItem.getPrize()),"奖励积分");
+                                    notifyUser(entity.getFbUserid(),prizeItem.getPrize()+"积分",true);
+                                }else{
+                                    notifyUser(entity.getFbUserid(),prizeItem.getPrize(),false);
                                 }
                             }
                             return Result.success(prizeItem);
@@ -295,6 +309,27 @@ public class UserProjectResultController {
         //结算奖励 奖励同步返回
 
         return Result.success();
+    }
+
+    private void notifyUser(Long user_id , String text , Boolean isScore){
+        //通知用户
+        Chat chat = oauthService.getPrivateChat(access_token,user_id);
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("chat_id", chat.getId());
+        JSONObject cardJson;
+        if(isScore){
+            cardJson = FanbookCard.getPrizeString("奖品发放通知", "您参与的问卷《这是问卷名称》中获得了"+text+"，奖品已发放。\n感谢您参加本次调研活动。", scoreHost,"积分商城");
+        }else{
+            cardJson = FanbookCard.getCdkString("奖品详情", "兑换码："+text+"\n感谢您参加本次调研活动。");
+        }
+
+        JSONObject taskJson = new JSONObject();
+        taskJson.put("type", "task");
+        taskJson.put("content", cardJson);
+        jsonObject.put("text", taskJson.toString());
+        jsonObject.put("parse_mode", "Fanbook");
+
+        String rstr = fanbookService.sendMessage(jsonObject);
     }
 
     //逻辑判断子方法 判断每个判断条件是否生效

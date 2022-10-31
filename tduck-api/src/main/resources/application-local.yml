@@ -72,7 +72,7 @@ wx:
         aesKey:
 fb:
   bot:
-    token: 8302590f7379f29b28fbfbcdfbf3c9ca3d3efdaf84d55bb69364c206da31541b1cf156ce14686efcd61296b7030fd08d
+    token: 93d4029fc9e80eb3b3415c560419f6f0fb0506ba320bdec5f5aa96980fd7d9b7bb2b697976ba3197fc659424a765f961
     id: 355239222308765696
   open:
     fanbook_oauth_page: https://a1.fanbook.mobi/open/oauth2/authorize?response_type=code&client_id=${fb.open.client}&state=3
@@ -88,6 +88,7 @@ fb:
       sendMessage: /sendMessage
       robothost: https://a1.fanbook.mobi/api/bot
       scorehost: https://open.fanbook.mobi/mp/138519745866498048/368331042878263296/shop-manage-pc
+      scoreredirecthost: https://open.fanbook.mobi/mp/138519745866498048/368331042878263296/shop-manage-pc
       appkey: qfslsezpodin5oaumu2w
       appsecret: j6iu8fi6zxasvrtwhdr5
       getuserscore: /api/core/open/getUserPoint
