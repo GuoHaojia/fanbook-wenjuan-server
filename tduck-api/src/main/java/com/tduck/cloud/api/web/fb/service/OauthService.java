@@ -145,6 +145,21 @@ public class OauthService {
         return botInfo;
     }
 
+    public JSONArray getGuildMembers(String access_token, String guildId,Integer after,Integer limit){
+        String rJson = OkHttpUtils
+                .builder().url(robothost + "/" + access_token + "/getGuildMembers")
+                .addHeader("content-type", "application/json")
+                .addHeader("authorization", "Bearer " + access_token)
+                .addParam("guild_id", guildId)
+                .get()
+                .sync();
+
+        if(null != rJson){
+            return JSONObject.parseObject(rJson).getJSONArray("result");
+        }else{
+            return null;
+        }
+    }
 
     public List<FanbookRole> getGuildRoles(String access_token, String guildId) {
         String rJson = OkHttpUtils

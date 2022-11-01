@@ -25,4 +25,7 @@ public class FanbookRoleVo {
 
     String guildId;
     String roleId;
+
+    Integer after;
+    Integer limit;
 }

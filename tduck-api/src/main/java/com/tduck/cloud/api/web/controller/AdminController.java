@@ -43,6 +43,9 @@ public class AdminController {
     private final OauthService oauthService;
     private final UserService userService;
 
+
+    @Value("${fb.bot.token}")
+    private String access_token;
     /**
      *
      * 分类对管理一对多
@@ -122,14 +125,21 @@ public class AdminController {
     @PostMapping("/fanbook/pullroles")
     @ApiOperation("批量拉取fanbook分类")
     public Result pullRoleFromFanbook(@RequestBody FanbookRoleVo fanbookRoleVo){
-        return Result.success(oauthService.getGuildRoles(fanbookRoleVo.getToken(),fanbookRoleVo.getGuildId()));
+        return Result.success(oauthService.getGuildRoles(access_token,fanbookRoleVo.getGuildId()));
+    }
+
+
+    @PostMapping("/fanbook/members")
+    @ApiOperation("批量拉取fanbook分类")
+    public Result members(@RequestBody FanbookRoleVo fanbookRoleVo){
+        return Result.success(oauthService.getGuildMembers(access_token,fanbookRoleVo.getGuildId(),fanbookRoleVo.getAfter(),fanbookRoleVo.getLimit()));
     }
 
     @PostMapping("/fanbook/pullmembers")
     @ApiOperation("批量拉取fanbook成员")
     public Result pullMemberFromFanbook(@RequestBody FanbookRoleVo fanbookRoleVo){
 
-        return Result.success(oauthService.getRoleMembers(fanbookRoleVo.getToken(),fanbookRoleVo.getGuildId(),fanbookRoleVo.getRoleId()));
+        return Result.success(oauthService.getRoleMembers(access_token,fanbookRoleVo.getGuildId(),fanbookRoleVo.getRoleId()));
 
     }
 
