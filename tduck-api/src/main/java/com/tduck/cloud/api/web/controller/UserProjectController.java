@@ -6,7 +6,6 @@ import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson.JSONObject;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.google.common.collect.Sets;
@@ -1008,16 +1007,16 @@ public class UserProjectController {
 
         List<UserProjectEntity> list = projectService.list(Wrappers.<UserProjectEntity>lambdaQuery().eq(UserProjectEntity::getFbUser, projectEntity.getFbUser())
                 .eq(UserProjectEntity::getDeleted, projectEntity.getDeleted()));
-        List<Long> ids = list.stream().map(UserProjectEntity::getId).collect(Collectors.toList());
+        List<String> keys = list.stream().map(UserProjectEntity::getKey).collect(Collectors.toList());
 
-        boolean key = projectService.removeByIds(ids);
+        int count = projectService.getBaseMapper().delete(Wrappers.<UserProjectEntity>lambdaQuery().in(UserProjectEntity::getKey, keys));
 
-        projectItemService.removeByIds(ids);
-        projectLogicService.removeByIds(ids);
-        userProjectThemeService.removeByIds(ids);
-        userProjectSettingService.removeByIds(ids);
+        projectItemService.getBaseMapper().delete(Wrappers.<UserProjectItemEntity>lambdaQuery().in(UserProjectItemEntity::getProjectKey, keys));
+        projectLogicService.getBaseMapper().delete(Wrappers.<UserProjectLogicEntity>lambdaQuery().in(UserProjectLogicEntity::getProjectKey, keys));
+        userProjectThemeService.getBaseMapper().delete(Wrappers.<UserProjectThemeEntity>lambdaQuery().in(UserProjectThemeEntity::getProjectKey, keys));
+        userProjectSettingService.getBaseMapper().delete(Wrappers.<UserProjectSettingEntity>lambdaQuery().in(UserProjectSettingEntity::getProjectKey, keys));
 
-        return Result.success(key);
+        return Result.success(count);
     }
 
 
