@@ -84,9 +84,10 @@ public class UserProjectSettingServiceImpl extends ServiceImpl<UserProjectSettin
                         StrUtil.toUnderlineCase(BaseEntity.Fields.createTime), DateUtil.today()));
             }*/
             int writeCount = userProjectResultService.count(wrapper);
+
             //if (CommonConstants.ConstantNumber.ONE <= writeCount) {
             if (everyoneWriteOnce <= writeCount) {
-                return Result.success(null, setting.getWriteOncePromptText());
+                return Result.success(null, "超过填写次数限制");
             }
         }
 
