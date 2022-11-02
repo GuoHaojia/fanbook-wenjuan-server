@@ -62,6 +62,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
@@ -525,7 +526,7 @@ public class UserProjectController {
                 List<UserProjectResultEntity> list = projectResultService.lambdaQuery().eq(UserProjectResultEntity::getProjectKey,request.getKey()).list();
 
                 for (UserProjectResultEntity item : list){
-                    if(winPrize(setting,request.getKey(),item) == false){
+                    if(winPrize(setting,request.getName(),request.getKey(),item) == false){
                         break;
                     }
                 }
@@ -539,28 +540,32 @@ public class UserProjectController {
     }
 
 
-    private void notifyUser(Long user_id , String text , Boolean isScore){
+    public void notifyUser(Long user_id ,String projectName , String text , Boolean isScore){
         //通知用户
         Chat chat = oauthService.getPrivateChat(access_token,user_id);
         JSONObject jsonObject = new JSONObject();
-        jsonObject.put("chat_id", chat.getId());
         JSONObject cardJson;
+        JSONObject taskJson = new JSONObject();
         if(isScore){
-            cardJson = FanbookCard.getPrizeString("奖品发放通知", "您参与的问卷《这是问卷名称》中获得了"+text+"，奖品已发放。\n感谢您参加本次调研活动。", scoreHost,"积分商城");
+            cardJson = FanbookCard.getPrizeString("奖品发放通知", "您参与的问卷《"+projectName+"》中获得了"+text+"，奖品已发放。\n感谢您参加本次调研活动。", scoreHost,"积分商城");
+
+            taskJson.put("type", "task");
+            taskJson.put("content", cardJson);
+            jsonObject.put("text", taskJson.toString());
+            jsonObject.put("parse_mode", "Fanbook");
+            jsonObject.put("chat_id", chat.getId());
         }else{
-            cardJson = FanbookCard.getCdkString("奖品详情", "兑换码："+text+"\n感谢您参加本次调研活动。");
+            cardJson = FanbookCard.getCdkString("您参与的问卷"+projectName+"中获得了CDK奖励，奖品已发放。感谢您参加本次调研活动。",text, chat.getId()+"");
+
+            jsonObject = cardJson;
         }
 
-        JSONObject taskJson = new JSONObject();
-        taskJson.put("type", "task");
-        taskJson.put("content", cardJson);
-        jsonObject.put("text", taskJson.toString());
-        jsonObject.put("parse_mode", "Fanbook");
 
         String rstr = fanbookService.sendMessage(jsonObject);
+        Logger.getLogger("发送消息返回").info(rstr);
     }
 
-    private Boolean winPrize(ProjectPrizeSettingEntity setting,String projectKey,UserProjectResultEntity userProjectResultEntity){
+    private Boolean winPrize(ProjectPrizeSettingEntity setting,String projectName,String projectKey,UserProjectResultEntity userProjectResultEntity){
         if(setting.getProbability() == 1 || (int)Math.random()*(setting.getProbability()+1) == 1)
         {
             //中奖逻辑
@@ -591,10 +596,10 @@ public class UserProjectController {
                         ThreadUtil.execAsync(() -> {
                             //添加积分
                             oauthService.modifyUserPoint(prizeItem.getId() + "", Long.valueOf(userProjectResultEntity.getGuildId()), Long.valueOf(userProjectResultEntity.getFbUserid()), Integer.valueOf(prizeItem.getPrize()), "奖励积分");
-                            notifyUser(userProjectResultEntity.getFbUserid(),prizeItem.getPrize()+"积分",true);
+                            notifyUser(userProjectResultEntity.getFbUserid(),projectName,prizeItem.getPrize()+"积分",true);
                         });
                     }else{
-                        notifyUser(userProjectResultEntity.getFbUserid(),prizeItem.getPrize(),false);
+                        notifyUser(userProjectResultEntity.getFbUserid(),projectName,prizeItem.getPrize(),false);
                     }
                 }
                 return true;
@@ -627,9 +632,9 @@ public class UserProjectController {
                         if(prizeItem.getType() == 1){
                             //添加积分
                             oauthService.modifyUserPoint(prizeItem.getId() + "", Long.valueOf(userProjectResultEntity.getGuildId()), Long.valueOf(userProjectResultEntity.getFbUserid()), Integer.valueOf(prizeItem.getPrize()), "奖励积分");
-                            notifyUser(userProjectResultEntity.getFbUserid(),prizeItem.getPrize()+"积分",true);
+                            notifyUser(userProjectResultEntity.getFbUserid(),projectName,prizeItem.getPrize()+"积分",true);
                         }else{
-                            notifyUser(userProjectResultEntity.getFbUserid(),prizeItem.getPrize(),false);
+                            notifyUser(userProjectResultEntity.getFbUserid(),projectName,prizeItem.getPrize(),false);
                         }
                     }
                     return true;
