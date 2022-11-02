@@ -37,7 +37,7 @@ public class TimingTaskUtils {
     @Scheduled(cron = "*/2 * * * * ?")
     public void stopQuestionnaire () {
         long start = System.currentTimeMillis();
-        System.out.println("查询问卷结束时间");
+        System.out.println("查询问卷设置");
 
         List<UserProjectSettingEntity> settings = userProjectSettingService.list(Wrappers.<UserProjectSettingEntity>lambdaQuery().isNotNull(UserProjectSettingEntity::getEndTime));
         Map<String, LocalDateTime> map = settings.stream().collect(Collectors.toMap(UserProjectSettingEntity::getProjectKey, UserProjectSettingEntity::getEndTime));
@@ -48,7 +48,6 @@ public class TimingTaskUtils {
                 if (v.isEqual(now) ||v.isBefore(now)) {
                     String url = host + path + "/user/project/stop";
                     String url1 = "http://localhost:8999/mofang-api/user/project/stop";
-                    String token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI0IiwiaWF0IjoxNjY3Mzg2NTI4LCJleHAiOjE2Njc5OTEzMjh9.81eoWYT1g1ov6XsQBxBOf9COh6EGEKo6ziv5YxK4-kNMYE79MuTnSOWoFN0XejVTG3b9Ml5isnWf3fEhbXCwIw";
                     JSONObject request = new JSONObject();
                     request.put("key", upe.getKey());
                     String post = RestTemplateUtil.builder().post(url, request);
