@@ -44,19 +44,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.chanjar.weixin.common.error.WxErrorException;
 import me.chanjar.weixin.mp.api.WxMpService;
-
-import org.checkerframework.checker.units.qual.Current;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotBlank;
 import java.text.SimpleDateFormat;
-
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -511,10 +507,10 @@ public class UserProjectController {
     @Login
     @PostMapping("/user/project/stop")
     public Result stopProject(@RequestBody UserProjectEntity request) {
+        ValidatorUtils.validateEntity(request);
         /**
          * 抽奖
          * */
-
         List<ProjectPrizeSettingEntity> settingList = projectPrizeSettingService.lambdaQuery().eq(ProjectPrizeSettingEntity::getProjectKey,request.getKey()).list();
         if(settingList.size() > 0) {
             ProjectPrizeSettingEntity setting = settingList.get(0);
