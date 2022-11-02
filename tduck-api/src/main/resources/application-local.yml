@@ -59,7 +59,7 @@ platform:
     validateCodeTemplateId: 808150
     retrievePwdValidateCodeTemplateId: 809014
   front:
-    baseUrl: http://localhost:8888/
+    baseUrl: http://localhost:8888
     resetPwdUrl: http://localhost:8888/forget/password?code={}&email={}
     updateEmailUrl: http://localhost:8888/account/validate?type=updateEmail&code={}&email={}
 wx:

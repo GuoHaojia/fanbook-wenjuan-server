@@ -6,7 +6,6 @@ import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson.JSONObject;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.google.common.collect.Sets;
@@ -45,19 +44,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.chanjar.weixin.common.error.WxErrorException;
 import me.chanjar.weixin.mp.api.WxMpService;
-
-import org.checkerframework.checker.units.qual.Current;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotBlank;
 import java.text.SimpleDateFormat;
-
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -513,10 +508,10 @@ public class UserProjectController {
     @Login
     @PostMapping("/user/project/stop")
     public Result stopProject(@RequestBody UserProjectEntity request) {
+        ValidatorUtils.validateEntity(request);
         /**
          * 抽奖
          * */
-
         List<ProjectPrizeSettingEntity> settingList = projectPrizeSettingService.lambdaQuery().eq(ProjectPrizeSettingEntity::getProjectKey,request.getKey()).list();
         if(settingList.size() > 0) {
             ProjectPrizeSettingEntity setting = settingList.get(0);
@@ -1013,16 +1008,16 @@ public class UserProjectController {
 
         List<UserProjectEntity> list = projectService.list(Wrappers.<UserProjectEntity>lambdaQuery().eq(UserProjectEntity::getFbUser, projectEntity.getFbUser())
                 .eq(UserProjectEntity::getDeleted, projectEntity.getDeleted()));
-        List<Long> ids = list.stream().map(UserProjectEntity::getId).collect(Collectors.toList());
+        List<String> keys = list.stream().map(UserProjectEntity::getKey).collect(Collectors.toList());
 
-        boolean key = projectService.removeByIds(ids);
+        int count = projectService.getBaseMapper().delete(Wrappers.<UserProjectEntity>lambdaQuery().in(UserProjectEntity::getKey, keys));
 
-        projectItemService.removeByIds(ids);
-        projectLogicService.removeByIds(ids);
-        userProjectThemeService.removeByIds(ids);
-        userProjectSettingService.removeByIds(ids);
+        projectItemService.getBaseMapper().delete(Wrappers.<UserProjectItemEntity>lambdaQuery().in(UserProjectItemEntity::getProjectKey, keys));
+        projectLogicService.getBaseMapper().delete(Wrappers.<UserProjectLogicEntity>lambdaQuery().in(UserProjectLogicEntity::getProjectKey, keys));
+        userProjectThemeService.getBaseMapper().delete(Wrappers.<UserProjectThemeEntity>lambdaQuery().in(UserProjectThemeEntity::getProjectKey, keys));
+        userProjectSettingService.getBaseMapper().delete(Wrappers.<UserProjectSettingEntity>lambdaQuery().in(UserProjectSettingEntity::getProjectKey, keys));
 
-        return Result.success(key);
+        return Result.success(count);
     }
 
 

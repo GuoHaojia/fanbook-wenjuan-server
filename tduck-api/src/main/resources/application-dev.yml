@@ -59,7 +59,7 @@ platform:
     validateCodeTemplateId: 808150
     retrievePwdValidateCodeTemplateId: 809014
   front:
-    baseUrl: http://wenjuan.k.tarstime.com/
+    baseUrl: http://wenjuan.k.tarstime.com
     resetPwdUrl: http://wenjuan.k.tarstime.com/forget/password?code={}&email={}
     updateEmailUrl: http://wenjuan.k.tarstime.com/account/validate?type=updateEmail&code={}&email={}
 wx:
