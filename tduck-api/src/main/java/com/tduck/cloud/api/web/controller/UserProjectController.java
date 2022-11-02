@@ -505,6 +505,7 @@ public class UserProjectController {
      *
      * @param request
      */
+    @Login
     @PostMapping("/user/project/stop")
     public Result stopProject(@RequestBody UserProjectEntity request) {
         ValidatorUtils.validateEntity(request);
