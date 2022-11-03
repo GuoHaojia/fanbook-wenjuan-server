@@ -326,14 +326,9 @@ public class UserProjectResultController {
         JSONObject cardJson;
         JSONObject taskJson = new JSONObject();
         if(isScore){
-            cardJson = FanbookCard.getPrizeString("奖品发放通知", "您参与的问卷《"+projectName+"》中获得了"+text+"，奖品已发放。\n感谢您参加本次调研活动。", scoreHost,"积分商城");
+            cardJson = FanbookCard.getPrizeString("您参与的问卷《"+projectName+"》中获得了"+text+"，奖品已发放。感谢您参加本次调研活动。", chat.getId()+"");
 
-
-            taskJson.put("type", "task");
-            taskJson.put("content", cardJson);
-            jsonObject.put("text", taskJson.toString());
-            jsonObject.put("parse_mode", "Fanbook");
-            jsonObject.put("chat_id", chat.getId());
+            jsonObject = cardJson;
         }else{
             cardJson = FanbookCard.getCdkString("您参与的问卷"+projectName+"中获得了CDK奖励，奖品已发放。感谢您参加本次调研活动。",text, chat.getId()+"");
 
