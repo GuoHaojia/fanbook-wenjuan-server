@@ -1,5 +1,7 @@
 package com.tduck.cloud.api.web.controller;
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.ObjectUtil;
@@ -154,14 +156,16 @@ public class UserProjectController {
         String newKey = project.getKey();
         List<UserProjectItemEntity> userProjectItemEntities = projectItemService.listByProjectKey(oldKey);
         List<UserProjectItemEntity> userProjectItemEntityList = JsonUtils.jsonToList(JsonUtils.objToJson(userProjectItemEntities), UserProjectItemEntity.class);
-        userProjectItemEntityList.forEach(item -> item.setProjectKey(newKey));
-        projectItemService.saveBatch(userProjectItemEntityList);
-        //复制逻辑
-        UserProjectLogicEntity logic = projectLogicService.
-                getOne(Wrappers.<UserProjectLogicEntity>lambdaQuery().eq(UserProjectLogicEntity::getProjectKey, oldKey));
-        if (ObjectUtil.isNotNull(logic)) {
-            logic.setProjectKey(newKey);
-            projectLogicService.save(logic);
+        if (CollectionUtil.isNotEmpty(userProjectItemEntityList)) {
+            userProjectItemEntityList.forEach(item -> item.setProjectKey(newKey));
+            projectItemService.saveBatch(userProjectItemEntityList);
+        }
+        //复制逻辑、角色设置
+        List<UserProjectLogicEntity> list = projectLogicService.
+                list(Wrappers.<UserProjectLogicEntity>lambdaQuery().eq(UserProjectLogicEntity::getProjectKey, oldKey));
+        if (CollectionUtil.isNotEmpty(list)) {
+            list.forEach(l -> l.setProjectKey(newKey));
+            projectLogicService.saveBatch(list);
         }
         //复制主题
         UserProjectThemeEntity theme = userProjectThemeService
@@ -170,12 +174,36 @@ public class UserProjectController {
             theme.setProjectKey(newKey);
             userProjectThemeService.save(theme);
         }
-        //复制设置
+        //复制答题设置
         UserProjectSettingEntity setting = userProjectSettingService
                 .getOne(Wrappers.<UserProjectSettingEntity>lambdaQuery().eq(UserProjectSettingEntity::getProjectKey, oldKey));
         if (ObjectUtil.isNotNull(setting)) {
             setting.setProjectKey(newKey);
+            setting.setEndTime(null);
             userProjectSettingService.save(setting);
+        }
+        //复制奖励
+        List<ProjectPrizeEntity> prizeList = projectPrizeService.
+                list(Wrappers.<ProjectPrizeEntity>lambdaQuery().eq(ProjectPrizeEntity::getProjectKey, oldKey));
+        if (CollectionUtil.isNotEmpty(prizeList)) {
+            prizeList.forEach(prize -> {
+                List<ProjectPrizeItemEntity> prizeItemList = projectPrizeItemService.list(Wrappers.<ProjectPrizeItemEntity>lambdaQuery().eq(ProjectPrizeItemEntity::getProjectKey, oldKey).eq(ProjectPrizeItemEntity::getPrizeid, prize.getId()));
+                prize.setProjectKey(newKey);
+                projectPrizeService.save(prize);
+                if (CollectionUtil.isNotEmpty(prizeItemList)) {
+                    prizeItemList.forEach(prizeItem -> {
+                        prizeItem.setProjectKey(newKey);
+                        prizeItem.setPrizeid(prize.getId());
+                    });
+                    projectPrizeItemService.saveBatch(prizeItemList);
+                }
+            });
+        }
+        ProjectPrizeSettingEntity prizeSetting = projectPrizeSettingService
+                .getOne(Wrappers.<ProjectPrizeSettingEntity>lambdaQuery().eq(ProjectPrizeSettingEntity::getProjectKey, oldKey));
+        if (ObjectUtil.isNotNull(prizeSetting)) {
+            prizeSetting.setProjectKey(newKey);
+            projectPrizeSettingService.save(prizeSetting);
         }
         return Result.success(project.getKey());
     }
@@ -660,20 +688,22 @@ public class UserProjectController {
      *
      * @param key
      */
-    @GetMapping("/user/project/details/{key}")
-    public Result queryProjectDetails(@PathVariable @NotBlank String key) {
+    @GetMapping("/user/project/details/{key}/{isPreview}")
+    public Result queryProjectDetails(@PathVariable @NotBlank String key, @PathVariable String isPreview) {
 
-        //获取配置时间
-        UserProjectSettingEntity entity = userProjectSettingService
-                .getOne(Wrappers.<UserProjectSettingEntity>lambdaQuery().eq(UserProjectSettingEntity::getProjectKey, key));
+        if (StringUtils.isEmpty(isPreview)) {
+            //获取配置时间
+            UserProjectSettingEntity entity = userProjectSettingService
+                    .getOne(Wrappers.<UserProjectSettingEntity>lambdaQuery().eq(UserProjectSettingEntity::getProjectKey, key));
 
-        if (ObjectUtil.isNotNull(entity)) {
-            if(entity.getStartTime() != null && LocalDateTime.now().isBefore(LocalDateTime.parse(entity.getStartTime().toString()))){
-                return Result.failed("问卷还未开始");
-            }
+            if (ObjectUtil.isNotNull(entity)) {
+                if(entity.getStartTime() != null && LocalDateTime.now().isBefore(LocalDateTime.parse(entity.getStartTime().toString()))){
+                    return Result.failed("问卷还未开始");
+                }
 
-            if(entity.getEndTime() != null && LocalDateTime.now().isAfter(LocalDateTime.parse(entity.getEndTime().toString()))){
-                return Result.failed("问卷已经结束");
+                if(entity.getEndTime() != null && LocalDateTime.now().isAfter(LocalDateTime.parse(entity.getEndTime().toString()))){
+                    return Result.failed("问卷已经结束");
+                }
             }
         }
 
@@ -991,6 +1021,12 @@ public class UserProjectController {
                 .eq(UserProjectThemeEntity::getProjectKey, projectEntity.getKey()));
         userProjectSettingService.remove(Wrappers.<UserProjectSettingEntity>lambdaQuery()
                 .eq(UserProjectSettingEntity::getProjectKey, projectEntity.getKey()));
+//        projectPrizeService.remove(Wrappers.<ProjectPrizeEntity>lambdaQuery()
+//                .eq(ProjectPrizeEntity::getProjectKey, projectEntity.getKey()));
+//        projectPrizeItemService.remove(Wrappers.<ProjectPrizeItemEntity>lambdaQuery()
+//                .eq(ProjectPrizeItemEntity::getProjectKey, projectEntity.getKey()));
+//        projectPrizeSettingService.remove(Wrappers.<ProjectPrizeSettingEntity>lambdaQuery()
+//                .eq(ProjectPrizeSettingEntity::getProjectKey, projectEntity.getKey()));
 
         return Result.success(remove);
     }
