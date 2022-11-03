@@ -39,6 +39,9 @@ public class SelectExpandStruct {
      */
     private String controlsPosition;
 
+    private Integer max;
+
+    private Integer min;
 
     public static class Option {
         public String label;

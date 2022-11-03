@@ -49,9 +49,9 @@ public class TimingTaskUtils {
                     String url = host + path + "/user/project/stop";
                     JSONObject request = new JSONObject();
                     request.put("key", upe.getKey());
-//                    String fbtoken = "mIOHt38z2kZCMlRqIOLY6g==";
-//                    String token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI0IiwiaWF0IjoxNjY3Mzg2NTI4LCJleHAiOjE2Njc5OTEzMjh9.81eoWYT1g1ov6XsQBxBOf9COh6EGEKo6ziv5YxK4-kNMYE79MuTnSOWoFN0XejVTG3b9Ml5isnWf3fEhbXCwIw";
-                    String post = RestTemplateUtil.builder().post(url, request);
+                    String fbtoken = "mIOHt38z2kZCMlRqIOLY6g==";
+                    String token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI0IiwiaWF0IjoxNjY3Mzg2NTI4LCJleHAiOjE2Njc5OTEzMjh9.81eoWYT1g1ov6XsQBxBOf9COh6EGEKo6ziv5YxK4-kNMYE79MuTnSOWoFN0XejVTG3b9Ml5isnWf3fEhbXCwIw";
+                    String post = RestTemplateUtil.builder().post(url, fbtoken, token, request);
                     log.debug("发送请求：" + post);
                 }
             }

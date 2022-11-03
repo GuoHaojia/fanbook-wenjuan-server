@@ -61,4 +61,21 @@ public class RestTemplateUtil {
         }
         return null;
     }
+
+    public String post(String url, String fbtoken, String token, JSONObject postData) {
+        RestTemplate client = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Content-Type", "application/json");
+        headers.set("fbtoken", fbtoken);
+        headers.set("token", token);
+        HttpEntity<JSONObject> entity = new HttpEntity<>(postData, headers);
+        ResponseEntity<String> responseEntity = null;
+        try {
+            responseEntity = client.postForEntity(url, entity, String.class);
+            return responseEntity.getBody();
+        } catch (RestClientException e) {
+
+        }
+        return null;
+    }
 }
