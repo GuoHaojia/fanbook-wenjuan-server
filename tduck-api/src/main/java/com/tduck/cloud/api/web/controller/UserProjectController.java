@@ -689,9 +689,9 @@ public class UserProjectController {
      * @param key
      */
     @GetMapping("/user/project/details/{key}")
-    public Result queryProjectDetails(@PathVariable @NotBlank String key, @RequestParam(required = false) String isPreview) {
+    public Result queryProjectDetails(@PathVariable @NotBlank String key) {
 
-        if (StringUtils.isEmpty(isPreview)) {
+//        if (StringUtils.isEmpty(isPreview)) {
             //获取配置时间
             UserProjectSettingEntity entity = userProjectSettingService
                     .getOne(Wrappers.<UserProjectSettingEntity>lambdaQuery().eq(UserProjectSettingEntity::getProjectKey, key));
@@ -704,7 +704,7 @@ public class UserProjectController {
                 if(entity.getEndTime() != null && LocalDateTime.now().isAfter(LocalDateTime.parse(entity.getEndTime().toString()))){
                     return Result.failed("问卷已经结束");
                 }
-            }
+//            }
         }
 
         UserProjectEntity project = projectService.getByKey(key);
