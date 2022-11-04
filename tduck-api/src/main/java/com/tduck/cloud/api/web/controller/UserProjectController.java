@@ -688,8 +688,8 @@ public class UserProjectController {
      *
      * @param key
      */
-    @GetMapping("/user/project/details")
-    public Result queryProjectDetails(@RequestParam @NotBlank String key, @RequestParam(required = false) String isPreview) {
+    @GetMapping("/user/project/details/{key}")
+    public Result queryProjectDetails(@PathVariable @NotBlank String key, @RequestParam(required = false) String isPreview) {
 
         if (StringUtils.isEmpty(isPreview)) {
             //获取配置时间
