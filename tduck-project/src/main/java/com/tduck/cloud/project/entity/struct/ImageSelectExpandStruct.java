@@ -22,6 +22,10 @@ public class ImageSelectExpandStruct {
      */
     private Boolean multiple;
 
+    private Boolean selectRandom;
+
+    private Boolean fixLastSelect;
+
     public static class Option {
         public String image;
         public String label;

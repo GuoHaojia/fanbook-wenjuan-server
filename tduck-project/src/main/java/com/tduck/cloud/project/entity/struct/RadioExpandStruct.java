@@ -23,6 +23,9 @@ public class RadioExpandStruct {
      */
     private List<Option> options;
 
+    private Boolean selectRandom;
+
+    private Boolean fixLastSelect;
 
     public static class Option {
         public String label;

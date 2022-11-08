@@ -37,4 +37,6 @@ public class InputExpandStruct {
     private Long minlength;
 
     private String type;
+
+    private String textType;
 }

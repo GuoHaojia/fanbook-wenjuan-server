@@ -43,6 +43,10 @@ public class SelectExpandStruct {
 
     private Integer min;
 
+    private Boolean selectRandom;
+
+    private Boolean fixLastSelect;
+
     public static class Option {
         public String label;
         public Integer value;
