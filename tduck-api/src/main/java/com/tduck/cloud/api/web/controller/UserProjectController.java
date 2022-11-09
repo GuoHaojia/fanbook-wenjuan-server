@@ -1,7 +1,6 @@
 package com.tduck.cloud.api.web.controller;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.ObjectUtil;
@@ -17,6 +16,7 @@ import com.tduck.cloud.account.vo.Chat;
 import com.tduck.cloud.api.annotation.Login;
 import com.tduck.cloud.api.util.HttpUtils;
 import com.tduck.cloud.api.web.fb.service.OauthService;
+import com.tduck.cloud.api.web.scheduled.ScheduledService;
 import com.tduck.cloud.common.constant.CommonConstants;
 import com.tduck.cloud.common.constant.FanbookCard;
 import com.tduck.cloud.common.entity.BaseEntity;
@@ -54,6 +54,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotBlank;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -87,14 +88,12 @@ public class UserProjectController {
     private final RedisUtils redisUtils;
     private final FanbookService fanbookService;
     private final WxMpService wxMpService;
-
+    private final ScheduledTaskService scheduledTaskService;
+    private final ScheduledService scheduledService;
     private final ProjectPrizeSettingService projectPrizeSettingService;
     private final ProjectPrizeService projectPrizeService;
     private final ProjectPrizeItemService projectPrizeItemService;
     private final OauthService oauthService;
-
-    private static ConcurrentHashMap<String, TimerTask> taskMap = new ConcurrentHashMap();
-    private static final String taskPrefix = "TimingPublish-Task";
 
 
     @Value("${fb.open.redirect_uri}")
@@ -443,10 +442,9 @@ public class UserProjectController {
     public Result timingPublishMsg(@RequestBody UserProjectEntity request) throws Exception{
         UserProjectEntity entity = projectService.getByKey(request.getKey());
 
-//        Date parse = new SimpleDateFormat("yyyy-MM-dd HH:mm").parse(request.getPublishTime());
         String ds = StrUtil.isNotBlank(request.getPublishTime()) ? request.getPublishTime() : new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
-        Date parse = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(ds);
-        Timer timer = new Timer();
+        DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        LocalDateTime newTime = LocalDateTime.parse(ds, df);
 
         if (request.getPublishList().size() > 0) {
             request.getPublishList().forEach(obj -> {
@@ -459,7 +457,6 @@ public class UserProjectController {
 
                     JSONObject jsonObject = new JSONObject();
                     jsonObject.put("chat_id", obj.getFbChannel());
-//                    jsonObject.put("publish_time", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(parse));
                     Document doc = Jsoup.parse(entity.getDescribe());
                     Elements links = doc.getElementsByTag("p");
                     ValidatorUtils.validateEntity(links);
@@ -470,22 +467,18 @@ public class UserProjectController {
                     jsonObject.put("text", taskJson.toString());
                     jsonObject.put("parse_mode", "Fanbook");
 
-                    String taskName = taskPrefix + obj.getId();
-                    TimerTask task = new TimerTask() {
-                        @Override
-                        public void run() {
-                            String rstr = fanbookService.sendMessage(jsonObject);
-                            Boolean aBoolean = (Boolean) JSONObject.parseObject(rstr).get("ok");
-                            obj.setStatus(aBoolean ? 1 : 2);
-                            userPublishService.updateById(obj);
-                            log.debug("发送文件返回：" + rstr);
-                            taskMap.remove(taskName);
-                        }
-                    };
-                    timer.schedule(task, parse);
+                    HashMap<String, Object> param = new HashMap<>();
+                    obj.setCreateTime(null);
+                    obj.setUpdateTime(null);
+                    param.put("entity", obj);
+                    param.put("jsonObject", jsonObject);
 
-                    if (obj.getStatus() == 3) {
-                        taskMap.put(taskName, task);
+                    ScheduledTaskEntity task = new ScheduledTaskEntity().setKey(obj.getKey()).setTime(newTime).setType(2).setStatus(0).setFlag(0).setParam(param).setPid(obj.getId());
+                    scheduledTaskService.save(task);
+                    try {
+                        scheduledService.addTask(task);
+                    } catch (ParseException e) {
+                        e.printStackTrace();
                     }
                 }
             });
@@ -497,20 +490,17 @@ public class UserProjectController {
      * 取消推送消息(定时)
      */
     @GetMapping("/user/project/cancelTimingPublish")
-    public Result timingPublishMsg(@RequestParam("id") Integer id) throws Exception{
+    public Result timingPublishMsg(@RequestParam("id") Long id) throws Exception{
 
-        String taskName = taskPrefix + id;
-        if (taskMap.containsKey(taskName)){
-            TimerTask timerTask = taskMap.get(taskName);
-            boolean cancel = timerTask.cancel();
-            if (cancel == true) {
-                taskMap.remove(taskName);
-                PublishEntity pb = userPublishService.getOne(Wrappers.<PublishEntity>lambdaQuery().eq(PublishEntity::getId, id));
-                pb.setStatus(4);
-                pb.updateById();
-                return Result.success(id, "取消成功");
-            }
-            return Result.failed("取消失败，请重试");
+        ScheduledTaskEntity one = scheduledTaskService.getOne(Wrappers.<ScheduledTaskEntity>lambdaQuery().select(ScheduledTaskEntity::getId).eq(ScheduledTaskEntity::getPid, id));
+
+        boolean remove = scheduledService.removeTask(one.getId());
+
+        if (remove == true) {
+            PublishEntity pb = userPublishService.getOne(Wrappers.<PublishEntity>lambdaQuery().eq(PublishEntity::getId, id));
+            pb.setStatus(4);
+            pb.updateById();
+            return Result.success(id, "取消成功");
         }
         return Result.failed("队列中无此任务");
     }
@@ -689,9 +679,9 @@ public class UserProjectController {
      * @param key
      */
     @GetMapping("/user/project/details/{key}")
-    public Result queryProjectDetails(@PathVariable @NotBlank String key) {
+    public Result queryProjectDetails(@PathVariable @NotBlank String key, @RequestParam(required = false) String isPreview) {
 
-//        if (StringUtils.isEmpty(isPreview)) {
+        if (StringUtils.isEmpty(isPreview)) {
             //获取配置时间
             UserProjectSettingEntity entity = userProjectSettingService
                     .getOne(Wrappers.<UserProjectSettingEntity>lambdaQuery().eq(UserProjectSettingEntity::getProjectKey, key));
@@ -704,7 +694,7 @@ public class UserProjectController {
                 if(entity.getEndTime() != null && LocalDateTime.now().isAfter(LocalDateTime.parse(entity.getEndTime().toString()))){
                     return Result.failed("问卷已经结束");
                 }
-//            }
+            }
         }
 
         UserProjectEntity project = projectService.getByKey(key);
@@ -899,14 +889,34 @@ public class UserProjectController {
      */
     @Login
     @PostMapping("/user/project/setting/save")
-    public Result saveProjectSetting(@RequestBody UserProjectSettingEntity settingEntity) {
+    public Result saveProjectSetting(@RequestBody UserProjectSettingEntity settingEntity) throws ParseException {
         ValidatorUtils.validateEntity(settingEntity);
+
         UserProjectSettingEntity entity = userProjectSettingService
                 .getOne(Wrappers.<UserProjectSettingEntity>lambdaQuery().eq(UserProjectSettingEntity::getProjectKey, settingEntity.getProjectKey()));
         if (ObjectUtil.isNotNull(entity)) {
             settingEntity.setId(entity.getId());
         }
-        return Result.success(userProjectSettingService.saveOrUpdate(settingEntity));
+        boolean sou = userProjectSettingService.saveOrUpdate(settingEntity);
+
+        LocalDateTime newTime = settingEntity.getEndTime();
+        //保存或更新定时任务
+        if (newTime != null) {
+            ScheduledTaskEntity task = scheduledTaskService.getOne(Wrappers.<ScheduledTaskEntity>lambdaQuery().eq(ScheduledTaskEntity::getKey, settingEntity.getProjectKey()).eq(ScheduledTaskEntity::getType, 1));
+//            DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+//            String format = df.format(settingEntity.getEndTime());
+            if (ObjectUtil.isNotNull(task) && !task.getTime().isEqual(newTime)) {
+                task.setTime(newTime).setStatus(0).setFlag(0);
+                scheduledTaskService.updateById(task);
+                scheduledService.updateTask(task);
+            } else if (ObjectUtil.isNull(task)) {
+                ScheduledTaskEntity task1 = new ScheduledTaskEntity().setKey(settingEntity.getProjectKey()).setTime(newTime).setType(1).setStatus(0).setFlag(0);
+                scheduledTaskService.save(task1);
+                scheduledService.addTask(task1);
+            }
+        }
+
+        return Result.success(sou);
     }
 
 
@@ -1040,6 +1050,7 @@ public class UserProjectController {
 
         List<UserProjectEntity> list = projectService.list(Wrappers.<UserProjectEntity>lambdaQuery().eq(UserProjectEntity::getFbUser, projectEntity.getFbUser())
                 .eq(UserProjectEntity::getDeleted, projectEntity.getDeleted()));
+        if (CollectionUtil.isEmpty(list)) {return Result.success("回收站无回收数据");}
         List<String> keys = list.stream().map(UserProjectEntity::getKey).collect(Collectors.toList());
 
         int count = projectService.getBaseMapper().delete(Wrappers.<UserProjectEntity>lambdaQuery().in(UserProjectEntity::getKey, keys));
