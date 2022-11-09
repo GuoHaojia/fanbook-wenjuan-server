@@ -67,7 +67,7 @@ public class ScheduledService implements InitializingBean {
         }
 
         futureMap.put(task.getId(), future);
-        System.out.println(futureMap);
+        log.info("定时任务队列：{}", futureMap);
 
         return true;
     }
@@ -121,9 +121,7 @@ public class ScheduledService implements InitializingBean {
         if (scheduledExecutor !=null) {
             scheduledExecutor.shutdown();
         }
-        System.out.println("111");
         scheduledExecutor = new ScheduledThreadPoolExecutor(3, threadFactory, new ThreadPoolExecutor.AbortPolicy());
-        System.out.println("222");
 
 //        if (!futureMap.isEmpty()) {
 //            futureMap.clear();

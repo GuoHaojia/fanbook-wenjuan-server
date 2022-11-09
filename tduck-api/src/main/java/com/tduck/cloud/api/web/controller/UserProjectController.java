@@ -492,7 +492,7 @@ public class UserProjectController {
     @GetMapping("/user/project/cancelTimingPublish")
     public Result timingPublishMsg(@RequestParam("id") Long id) throws Exception{
 
-        ScheduledTaskEntity one = scheduledTaskService.getOne(Wrappers.<ScheduledTaskEntity>lambdaQuery().select(ScheduledTaskEntity::getId).eq(ScheduledTaskEntity::getPid, id));
+        ScheduledTaskEntity one = scheduledTaskService.getOne(Wrappers.<ScheduledTaskEntity>lambdaQuery().eq(ScheduledTaskEntity::getPid, id));
 
         boolean remove = scheduledService.removeTask(one.getId());
 
