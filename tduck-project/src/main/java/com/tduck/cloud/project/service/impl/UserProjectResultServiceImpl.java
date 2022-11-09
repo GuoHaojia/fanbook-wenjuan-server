@@ -229,6 +229,7 @@ public class UserProjectResultServiceImpl extends ServiceImpl<UserProjectResultM
             String projectKey = item.getProjectKey();
             Long id = item.getId();
             String label = item.getLabel();
+            if (CollectionUtil.isEmpty(expand)) { log.error(label+"：表单项无扩展属性"); }
             String type = item.getType().getValue();
 
             //多选 单选 下拉 图片选择
