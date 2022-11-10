@@ -528,45 +528,49 @@ public class UserProjectResultController {
                         String type = item.getType().getValue();
                         String pkey = item.getProjectKey();
                         Long id = item.getId();
-                        //题目计数
-                        redisUtils.incr(StrUtil.format("PROJECT_RESULT_"+type+":{}", pkey+"/"+id), CommonConstants.ConstantNumber.ONE);
-                        //多选 单选 下拉 图片选择 评分
-                        if (type == "CHECKBOX" || type == "RADIO" || type == "SELECT" || type == "IMAGE_SELECT" ||type == "RATE") {
-                            //选项计数
-                            this.redisIncr(value, pkey, id, type);
-                        }
-                        //矩阵量表
-                        if (type == "MATRIX_SCALE") {
-                            Map<String, Object> parse = JsonUtils.jsonToMap(JSON.toJSONString(value));
-                            System.out.println(parse);
-                            parse.forEach((k, v) -> {
-                                System.out.println(k);
-                                System.out.println(v);
-                                if (Integer.parseInt(v.toString())!=0) {
-                                    //选项行计数
-                                    this.redisIn(type, pkey, id, k, null);
-                                    //选项列计数
-                                    this.redisIn(type, pkey, id, k, v);
-                                }
-                            });
-                        }
-                        //矩阵选择
-                        if (type =="MATRIX_SELECT") {
-                            Map<String, Object> parse = JsonUtils.jsonToMap(JSON.toJSONString(value));
-                            System.out.println(parse);
-                            parse.forEach((k, v) -> {
-                                System.out.println(k);
-                                System.out.println(v);
-                                List v1 = (List) v;
-                                if (CollectionUtil.isNotEmpty(v1)) {
-                                    //选项行计数
-                                    this.redisIn(type, pkey, id, k, null);
-                                    //选项列计数
-                                    v1.forEach(l -> {
-                                        this.redisIn(type, pkey, id, k, l);
-                                    });
-                                }
-                            });
+
+                        if (type == "RATE" && value.equals(0)) {
+                        } else {
+                            //题目计数
+                            redisUtils.incr(StrUtil.format("PROJECT_RESULT_"+type+":{}", pkey+"/"+id), CommonConstants.ConstantNumber.ONE);
+                            //多选 单选 下拉 图片选择 评分
+                            if (type == "CHECKBOX" || type == "RADIO" || type == "SELECT" || type == "IMAGE_SELECT" ||type == "RATE") {
+                                //选项计数
+                                this.redisIncr(value, pkey, id, type);
+                            }
+                            //矩阵量表
+                            if (type == "MATRIX_SCALE") {
+                                Map<String, Object> parse = JsonUtils.jsonToMap(JSON.toJSONString(value));
+                                System.out.println(parse);
+                                parse.forEach((k, v) -> {
+                                    System.out.println(k);
+                                    System.out.println(v);
+                                    if (Integer.parseInt(v.toString())!=0) {
+                                        //选项行计数
+                                        this.redisIn(type, pkey, id, k, null);
+                                        //选项列计数
+                                        this.redisIn(type, pkey, id, k, v);
+                                    }
+                                });
+                            }
+                            //矩阵选择
+                            if (type =="MATRIX_SELECT") {
+                                Map<String, Object> parse = JsonUtils.jsonToMap(JSON.toJSONString(value));
+                                System.out.println(parse);
+                                parse.forEach((k, v) -> {
+                                    System.out.println(k);
+                                    System.out.println(v);
+                                    List v1 = (List) v;
+                                    if (CollectionUtil.isNotEmpty(v1)) {
+                                        //选项行计数
+                                        this.redisIn(type, pkey, id, k, null);
+                                        //选项列计数
+                                        v1.forEach(l -> {
+                                            this.redisIn(type, pkey, id, k, l);
+                                        });
+                                    }
+                                });
+                            }
                         }
                     }
                 });
@@ -581,14 +585,11 @@ public class UserProjectResultController {
         //排除答题单、双选设置
         if (value instanceof List) {
             List jsonObject = JSONArray.parseObject(JSON.toJSONString(value), List.class);
-            System.out.println(jsonObject);
             jsonObject.forEach(index -> {
-                System.out.println(index);
                 //(index)排除选项同名bug
                 this.redisIn(type, pkey, id, index, null);
             });
         } else {
-            System.out.println(value);
             this.redisIn(type, pkey, id, value, null);
         }
     }

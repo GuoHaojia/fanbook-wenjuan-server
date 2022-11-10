@@ -50,6 +50,10 @@ public class UserProjectItemEntity extends BaseEntity<UserProjectItemEntity> {
 
     private String textType;
 
+    private Boolean titleTip;
+
+    private String titleTipText;
+
     /**
      * 展示类型组件
      */

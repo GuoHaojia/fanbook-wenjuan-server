@@ -44,6 +44,10 @@ public class OperateProjectItemRequest {
 
     private String textType;
 
+    private Boolean titleTip;
+
+    private String titleTipText;
+
     /**
      * 是否有输入值
      */
