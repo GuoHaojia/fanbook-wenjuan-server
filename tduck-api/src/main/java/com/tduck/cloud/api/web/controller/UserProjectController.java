@@ -706,6 +706,7 @@ public class UserProjectController {
 
         UserProjectEntity project = projectService.getByKey(key);
         List<UserProjectItemEntity> projectItemList = projectItemService.listByProjectKey(key);
+        projectItemList.forEach(item -> item.setDefaultValue(null) );
         UserProjectThemeVo themeVo = userProjectThemeService.getUserProjectDetails(key);
         return Result.success(new UserProjectDetailVO(project, projectItemList, themeVo));
     }

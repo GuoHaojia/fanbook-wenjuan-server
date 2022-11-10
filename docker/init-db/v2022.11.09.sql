@@ -38,3 +38,6 @@ CREATE TABLE `scheduled_task`  (
 -- ----------------------------
 -- Records of scheduled_task
 -- ----------------------------
+ALTER TABLE `pr_user_project_item`
+ADD COLUMN `title_tip` tinyint(1) NOT NULL DEFAULT 0 AFTER `text_type`,
+ADD COLUMN `title_tip_text` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci AFTER `title_tip`;

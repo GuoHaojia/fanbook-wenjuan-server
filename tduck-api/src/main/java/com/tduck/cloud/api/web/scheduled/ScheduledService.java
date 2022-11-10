@@ -58,8 +58,8 @@ public class ScheduledService implements InitializingBean {
         ScheduledFuture<?> future = null;
 
         if (task.getType() == 1) {
-            //        String url = host + path + "/user/project/stop";
-            String url = "http://localhost:8999/mofang-api/user/project/stop";
+            String url = host + path + "/user/project/stop";
+//            String url = "http://localhost:8999/mofang-api/user/project/stop";
             future = scheduledExecutor.schedule(new StopTask(task, url, taskService), delay, TimeUnit.SECONDS);
         }
         if (task.getType() == 2) {

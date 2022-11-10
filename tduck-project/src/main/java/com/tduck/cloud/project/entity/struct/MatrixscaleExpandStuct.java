@@ -7,11 +7,13 @@ import java.util.List;
 @Data
 public class MatrixscaleExpandStuct {
     private Table table;
+    private MaxTipData maxTipData;
+    private String showIcon;
+    private String maxTip;
+    private Integer level;
 
     public static class Table {
         public List<Option> rows;
-        public List<CopyWriting> copyWriting;
-        public Integer level;
     }
 
     public static class Option {
@@ -19,7 +21,7 @@ public class MatrixscaleExpandStuct {
         public Integer id;
     }
 
-    public static class CopyWriting {
+    public static class MaxTipData {
         public String max;
         public String min;
     }
