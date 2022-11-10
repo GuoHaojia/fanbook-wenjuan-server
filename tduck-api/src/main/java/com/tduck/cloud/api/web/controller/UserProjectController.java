@@ -586,8 +586,8 @@ public class UserProjectController {
             UserEntity userEntity = userService.getOne(Wrappers.<UserEntity>lambdaQuery().eq(UserEntity::getFbUser,userProjectResultEntity.getFbUserid()));
 
 
-            if(userEntity == null){
-                //用户可能无fanbookid
+            if(userEntity == null || userProjectResultEntity.getGuildId() == null){
+                //用户可能无fanbookid 服务器id
                 return true;
             }
 
