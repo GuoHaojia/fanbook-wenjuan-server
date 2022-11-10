@@ -270,7 +270,7 @@ public class UserProjectResultServiceImpl extends ServiceImpl<UserProjectResultM
             if (type == "MATRIX_SCALE") {
                 List jm = new ArrayList();
                 Map<String, Object> table = JsonUtils.jsonToMap(JSON.toJSONString(expand.get("table")));
-                Integer level = Integer.parseInt(table.get("level").toString());
+                Integer level = Integer.parseInt(expand.get("level").toString());
                 List<Map<String, Object>> rows = (List<Map<String, Object>>) table.get("rows");
                 rows.forEach(row -> {
                     Object is = row.get("id");
