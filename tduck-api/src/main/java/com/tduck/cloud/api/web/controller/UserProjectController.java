@@ -902,7 +902,7 @@ public class UserProjectController {
      */
     @Login
     @PostMapping("/user/project/setting/save")
-    public Result saveProjectSetting(@RequestBody UserProjectSettingEntity settingEntity) throws ParseException {
+    public Result saveProjectSetting(@RequestBody UserProjectSettingEntity settingEntity, HttpServletRequest request) throws ParseException {
         ValidatorUtils.validateEntity(settingEntity);
 
         UserProjectSettingEntity entity = userProjectSettingService
@@ -916,14 +916,18 @@ public class UserProjectController {
         //保存或更新定时任务
         if (newTime != null) {
             ScheduledTaskEntity task = scheduledTaskService.getOne(Wrappers.<ScheduledTaskEntity>lambdaQuery().eq(ScheduledTaskEntity::getKey, settingEntity.getProjectKey()).eq(ScheduledTaskEntity::getType, 1));
-//            DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-//            String format = df.format(settingEntity.getEndTime());
+            String fbtoken = request.getHeader("fbtoken");
+            String token = request.getHeader("token");
+            HashMap<String, Object> param = new HashMap<>();
+            param.put("fbtoken", fbtoken);
+            param.put("token", token);
+
             if (ObjectUtil.isNotNull(task) && !task.getTime().isEqual(newTime)) {
-                task.setTime(newTime).setStatus(0).setFlag(0);
+                task.setTime(newTime).setStatus(0).setFlag(0).setParam(param);
                 scheduledTaskService.updateById(task);
                 scheduledService.updateTask(task);
             } else if (ObjectUtil.isNull(task)) {
-                ScheduledTaskEntity task1 = new ScheduledTaskEntity().setKey(settingEntity.getProjectKey()).setTime(newTime).setType(1).setStatus(0).setFlag(0);
+                ScheduledTaskEntity task1 = new ScheduledTaskEntity().setKey(settingEntity.getProjectKey()).setTime(newTime).setType(1).setStatus(0).setFlag(0).setParam(param);
                 scheduledTaskService.save(task1);
                 scheduledService.addTask(task1);
             }
