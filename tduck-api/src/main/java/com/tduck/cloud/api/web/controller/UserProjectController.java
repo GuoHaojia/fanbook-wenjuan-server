@@ -584,6 +584,13 @@ public class UserProjectController {
                     .eq(ProjectPrizeItemEntity::getStatus,true).list();
 
             UserEntity userEntity = userService.getOne(Wrappers.<UserEntity>lambdaQuery().eq(UserEntity::getFbUser,userProjectResultEntity.getFbUserid()));
+
+
+            if(userEntity == null){
+                //用户可能无fanbookid
+                return true;
+            }
+
             if(prizeList.size() > 0)
             {
 
