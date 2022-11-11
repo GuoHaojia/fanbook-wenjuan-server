@@ -75,10 +75,11 @@ public class UserProjectSettingServiceImpl extends ServiceImpl<UserProjectSettin
         //每个人只需填写一次 根据IP判断
         Integer everyoneWriteOnce = setting.getEveryoneWriteOnce();
         //Boolean everyoneDayWriteOnce = setting.getEveryoneDayWriteOnce();
-        if (everyoneWriteOnce > 0) {
+        if (everyoneWriteOnce > 0 && wxOpenId!=null) {
             LambdaQueryWrapper<UserProjectResultEntity> wrapper = Wrappers.<UserProjectResultEntity>lambdaQuery()
-                    .eq(UserProjectResultEntity::getProjectKey, projectKey)
-                    .eq(UserProjectResultEntity::getSubmitRequestIp, requestIp);
+                 .eq(UserProjectResultEntity::getProjectKey, projectKey)
+                 .eq(UserProjectResultEntity::getFbUserid, wxOpenId);
+            //        .eq(UserProjectResultEntity::getSubmitRequestIp, requestIp);
             /*if (everyoneDayWriteOnce) {
                 wrapper.apply(StrUtil.format("date_format({},'%Y-%m-%d') = '{}'",
                         StrUtil.toUnderlineCase(BaseEntity.Fields.createTime), DateUtil.today()));
