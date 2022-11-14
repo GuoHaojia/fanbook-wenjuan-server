@@ -111,6 +111,9 @@ public class UserProjectSettingServiceImpl extends ServiceImpl<UserProjectSettin
                     .eq(UserProjectResultEntity::getFbUserid, wxOpenId);
             int writeCount = userProjectResultService.count(wrapper);
             if (CommonConstants.ConstantNumber.ONE <= writeCount) {
+                Logger.getLogger("问卷已经填写限制").info("projectKey:"+projectKey);
+                Logger.getLogger("问卷已经填写限制").info("requestIp:"+requestIp);
+                Logger.getLogger("问卷已经填写限制").info("fbuserid:"+wxOpenId);
                 return Result.success(null, "已经填写过，无法再次填写");
             }
         }
