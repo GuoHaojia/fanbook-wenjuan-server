@@ -141,18 +141,18 @@ public class UserProjectResultServiceImpl extends ServiceImpl<UserProjectResultM
                     iterator.remove();
                 }
             }
-            processData.put(UserProjectResultEntity.Fields.fbUsername, item.getFbUsername());
-            processData.put(UserEntity.Fields.name, user.getName());
-            processData.put(UserEntity.Fields.phoneNumber, user.getPhoneNumber());
-            processData.put(BaseEntity.Fields.createTime, item.getCreateTime());
-            processData.put(UserProjectResultEntity.Fields.completeTime, item.getCompleteTime());
+            processData.put(UserProjectResultEntity.Fields.fbUsername, Optional.ofNullable(item).map(i -> i.getFbUsername()).orElse(null));
+            processData.put(UserEntity.Fields.name, Optional.ofNullable(user).map(u -> u.getName()).orElse(null));
+            processData.put(UserEntity.Fields.phoneNumber, Optional.ofNullable(user).map(u -> u.getPhoneNumber()).orElse(null));
+            processData.put(BaseEntity.Fields.createTime, Optional.ofNullable(item).map(i -> i.getCreateTime()).orElse(null));
+            processData.put(UserProjectResultEntity.Fields.completeTime, Optional.ofNullable(item).map(i -> i.getCompleteTime()).orElse(null));
             return processData;
         }).collect(Collectors.toList());
         List<ExportProjectResultVO.ExcelHeader> allHeaderList = new ArrayList<>();
         allHeaderList.addAll(ExportProjectResultVO.DEFAULT_HEADER_NAME);
         allHeaderList.addAll(titleList);
-        System.out.println(titleList);
-        System.out.println(resultList);
+//        System.out.println(titleList);
+//        System.out.println(resultList);
         return new ExportProjectResultVO(allHeaderList, resultList);
     }
 
