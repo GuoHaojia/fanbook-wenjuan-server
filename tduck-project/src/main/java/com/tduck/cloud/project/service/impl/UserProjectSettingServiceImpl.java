@@ -97,6 +97,9 @@ public class UserProjectSettingServiceImpl extends ServiceImpl<UserProjectSettin
 
             //if (CommonConstants.ConstantNumber.ONE <= writeCount) {
             if (everyoneWriteOnce <= writeCount) {
+                Logger.getLogger("问卷限制").info("projectKey:"+projectKey);
+                Logger.getLogger("问卷限制").info("requestIp:"+requestIp);
+                Logger.getLogger("问卷限制").info("fbuserid:"+wxOpenId);
                 return Result.success(null, "超过填写次数限制");
             }
         }
