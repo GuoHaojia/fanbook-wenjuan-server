@@ -1,22 +1,36 @@
-## 前言
+# 后端应用打包
 
-##### 1. 导入数据库 目前只支持mysql5.7及以上版本
-创建数据名为`tduck`
-下载`tduck-v3.sql`文件 并且导入创建的数据中
+详细打包流程见 .github/workflow/build-compiler-main.yml
 
-##### 2. 下载项目jar文件
-下载项目jar包文件`tduck-api.jar`到本地
+## 1、jdk版本
++ Java version: 1.8.0_332, vendor: Oracle Corporation, runtime: /usr/local/openjdk-8/jre
 
-##### 3.修改配置并启动项目
-下载`application-custom.yml `配置文件
-把下载的jar包和配置文件放在同一个目录下
-修改为自己的配置，主要修改位置为数据库以及文件存储配置
+## 2、mvn版本
++ Apache Maven 3.6.3
 
-##### 4.运行项目
-运行如下命令启动项目
-`java -Dfile.encoding=UTF-8 -jar tduck-api.jar --spring.profiles.active=custom`
-出现如下提示代表启动完成
+## 3、mysql版本
++ 8.0.29-0
++ utf8mb4
++ docker/init-db/dev_tduck.sql
 
-##### 5.访问项目
-浏览器地址栏输入http://localhost:8999/
-默认账号密码：test@tduck.com/12356789
+## 4、redis版本
++ redis:6.2.5
+
+## 5、打包配置
++ 基础配置: tduck-api/src/main/resources/application.yaml
++ 环境dev: tduck-api/src/main/resources/application-dev.yaml
+
+## 系统版本
++ ubuntu0.20.04.3
+
+## 6、打包步骤
+```shell
+mvn clean install -DskipTests
+cd tduck-api
+sed -i 's#local#dev#g' src/main/resources/application.yml
+mvn clean package -DskipTests
+```
+
+# 后端应用部署
++ helm包：helm
++ docker镜像（Dockerfile）
