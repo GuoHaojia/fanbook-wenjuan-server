@@ -33,4 +33,4 @@ mvn clean package -DskipTests
 
 # 后端应用部署
 + helm包：helm
-+ docker镜像（Dockerfile）
++ docker镜像：tduck-api/Dockerfile
